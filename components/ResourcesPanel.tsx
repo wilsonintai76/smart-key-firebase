@@ -86,7 +86,7 @@ export const ResourcesPanel: React.FC<ResourcesPanelProps> = ({
         <button
           onClick={onUnlockDoor}
           disabled={doorOpen || !isBluetoothConnected}
-          className={`flex-shrink-0 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 shadow-lg ${
+          className={`shrink-0 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 shadow-lg ${
             doorOpen 
             ? 'bg-emerald-50 text-emerald-600 border-2 border-emerald-200 shadow-emerald-500/10 cursor-default' 
             : isBluetoothConnected
@@ -109,7 +109,7 @@ export const ResourcesPanel: React.FC<ResourcesPanelProps> = ({
             <button
               key={idx}
               onClick={() => setActiveModuleIndex(idx)}
-              className={`flex-shrink-0 px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wide transition-all border-2 flex items-center gap-2 relative ${
+              className={`shrink-0 px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wide transition-all border-2 flex items-center gap-2 relative ${
                 isActive 
                 ? 'bg-slate-900 text-white border-slate-900 shadow-lg' 
                 : 'bg-white text-slate-400 border-slate-100 hover:border-blue-200 hover:text-blue-500'
@@ -126,7 +126,7 @@ export const ResourcesPanel: React.FC<ResourcesPanelProps> = ({
       </div>
 
       {/* Grid of Slots */}
-      <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4 gap-3 md:gap-6 min-h-[400px]">
+      <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4 gap-3 md:gap-6 min-h-100">
         {chunkedSlots[activeModuleIndex] ? (
           chunkedSlots[activeModuleIndex].map(s => (
             <KeyCard 

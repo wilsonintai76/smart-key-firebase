@@ -72,7 +72,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-[1920px] mx-auto">
+    <div className="space-y-8 animate-fadeIn max-w-480 mx-auto">
       
       <EmergencyBanners
         isEmergencySequencing={isEmergencySequencing}

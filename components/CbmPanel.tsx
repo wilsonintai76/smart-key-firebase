@@ -53,7 +53,7 @@ export const CbmPanel: React.FC<CbmPanelProps> = ({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 relative z-10">
-        <div className="xl:col-span-8 space-y-8 max-h-[700px] overflow-y-auto custom-scrollbar pr-4 pb-4">
+        <div className="xl:col-span-8 space-y-8 max-h-175 overflow-y-auto custom-scrollbar pr-4 pb-4">
           {rackModules.map((module, mIdx) => {
             return (
               <div key={mIdx} className="bg-[#0f172a]/40 rounded-[32px] border border-white/5 overflow-hidden">

@@ -25,7 +25,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
     <>
       {globalError && (
         <div className="fixed top-0 left-0 right-0 bg-rose-500 text-white p-3 z-[500] flex justify-between items-center shadow-lg animate-fadeIn text-sm font-medium">
-          <div className="flex items-center gap-2 max-w-[1920px] mx-auto w-full px-4">
+          <div className="flex items-center gap-2 max-w-480 mx-auto w-full px-4">
             <i className="fa-solid fa-triangle-exclamation"></i>
             <span>{globalError}</span>
           </div>

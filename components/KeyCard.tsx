@@ -172,7 +172,7 @@ export const KeyCard: React.FC<KeyCardProps> = ({
              <div className="flex flex-col items-center animate-fadeIn">
                <span className="text-[8px] font-black uppercase text-blue-500 tracking-[0.2em] mb-1">Key Removed</span>
                <div className="bg-blue-600 px-4 py-1.5 rounded-full shadow-lg shadow-blue-200">
-                 <p className="text-[10px] font-black text-white uppercase tracking-wider truncate max-w-[120px]">
+                 <p className="text-[10px] font-black text-white uppercase tracking-wider truncate max-w-30">
                    {slot.borrowedBy || 'Guest'}
                  </p>
                </div>

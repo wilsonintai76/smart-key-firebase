@@ -60,7 +60,7 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ logs, isAdminMode, onExp
   const activeFilterCount = [filterUser, filterType !== 'all', filterStartDate, filterEndDate].filter(Boolean).length;
 
   return (
-    <div className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm h-[600px] flex flex-col">
+    <div className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm h-150 flex flex-col">
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="flex items-center gap-3">
           <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Audit Trail</h3>

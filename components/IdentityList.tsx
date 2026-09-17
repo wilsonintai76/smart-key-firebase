@@ -33,7 +33,7 @@ export const IdentityList: React.FC<IdentityListProps> = ({
       
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto -mx-6 sm:mx-0">
-        <table className="w-full text-left min-w-[600px]">
+        <table className="w-full text-left min-w-150">
           <thead>
             <tr className="border-b border-slate-50">
               <th className="pb-4 text-[10px] font-black uppercase text-slate-400 px-6">Identity</th>

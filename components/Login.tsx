@@ -75,7 +75,7 @@ export const Login: React.FC<LoginProps> = ({
               </p>
               {bluetoothStatus === 'disconnected' && (
                 <button onClick={() => bluetoothService.startScanning()}
-                  className="text-[10px] font-bold text-blue-600 underline mt-1 min-h-[44px] flex items-center">
+                  className="text-[10px] font-bold text-blue-600 underline mt-1 min-h-11 flex items-center">
                   <i className="fa-solid fa-magnifying-glass mr-1"></i> Tap to Scan
                 </button>
               )}
@@ -90,13 +90,13 @@ export const Login: React.FC<LoginProps> = ({
                   key={device.id}
                   onClick={() => bluetoothService.connectToDevice(device)}
                   disabled={bluetoothStatus === 'connecting' || bluetoothStatus === 'connected'}
-                  className={`w-full p-3.5 rounded-2xl border-2 transition-all duration-150 text-left flex items-center justify-between gap-3 min-h-[52px] active:scale-[0.98] ${
+                  className={`w-full p-3.5 rounded-2xl border-2 transition-all duration-150 text-left flex items-center justify-between gap-3 min-h-13 active:scale-[0.98] ${
                     bluetoothStatus === 'connected' ? 'bg-slate-50 border-slate-100 opacity-60' :
                     'bg-white border-slate-200 active:border-blue-400 active:shadow-md'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
                       <i className="fa-solid fa-bluetooth-b text-blue-600"></i>
                     </div>
                     <div>
@@ -121,7 +121,7 @@ export const Login: React.FC<LoginProps> = ({
             <button
               onClick={handleGoogleSignIn}
               disabled={busy || !isFirebaseConfigured}
-              className="w-full py-4 rounded-2xl font-black uppercase text-xs tracking-wider flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 active:border-blue-400 active:text-blue-600 disabled:opacity-50 transition-colors duration-150 min-h-[52px]"
+              className="w-full py-4 rounded-2xl font-black uppercase text-xs tracking-wider flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 active:border-blue-400 active:text-blue-600 disabled:opacity-50 transition-colors duration-150 min-h-13"
             >
               {busy ? (
                 <><i className="fa-solid fa-spinner animate-spin"></i> Signing in...</>

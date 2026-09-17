@@ -27,7 +27,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn">
-      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden min-h-[600px] flex flex-col md:flex-row">
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden min-h-150 flex flex-col md:flex-row">
         {/* Settings Sidebar */}
         <div className="w-full md:w-64 bg-slate-50 p-6 border-b md:border-b-0 md:border-r border-slate-100 shrink-0">
           <div className="mb-10">

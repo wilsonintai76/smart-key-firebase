@@ -64,7 +64,7 @@ export const RackTopology: React.FC<RackTopologyProps> = ({
             <button 
               key={idx} 
               onClick={() => setActiveAdminModuleIndex(idx)} 
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase border transition-all relative ${
+              className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase border transition-all relative ${
                 activeAdminModuleIndex === idx 
                 ? 'bg-slate-800 text-white border-slate-800 shadow-md' 
                 : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100'
@@ -78,7 +78,7 @@ export const RackTopology: React.FC<RackTopologyProps> = ({
       </div>
 
       {/* Node List */}
-      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar py-2">
+      <div className="space-y-3 max-h-75 overflow-y-auto pr-2 custom-scrollbar py-2">
         {chunkedSlots[activeAdminModuleIndex]?.map(s => {
           const isNodeLocked = s.isLocked || isSystemLocked;
           
@@ -103,7 +103,7 @@ export const RackTopology: React.FC<RackTopologyProps> = ({
                 <button 
                   onClick={() => onToggleSlotLock(s.id)} 
                   disabled={isSystemLocked}
-                  className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 shadow-sm ${
+                  className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center shrink-0 shadow-sm ${
                     isSystemLocked 
                     ? 'bg-rose-600 text-white cursor-not-allowed shadow-rose-200 animate-pulse' 
                     : s.isLocked 

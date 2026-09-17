@@ -35,7 +35,7 @@ export const MobileNavigation: React.FC<TabNavigationProps> = ({
               <button
                 key={tab.id}
                 onClick={() => { onViewChange(tab.id); onShowSettings(false); }}
-                className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-2 rounded-xl transition-all duration-200 ${
+                className={`flex flex-col items-center justify-center min-w-16 py-1.5 px-2 rounded-xl transition-all duration-200 ${
                   active
                     ? 'text-blue-600'
                     : 'text-slate-400 hover:text-slate-600'
@@ -61,7 +61,7 @@ export const MobileNavigation: React.FC<TabNavigationProps> = ({
           {/* Settings / Profile tab */}
           <button
             onClick={() => onShowSettings(!showSettings)}
-            className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-2 rounded-xl transition-all duration-200 ${
+            className={`flex flex-col items-center justify-center min-w-16 py-1.5 px-2 rounded-xl transition-all duration-200 ${
               showSettings
                 ? 'text-blue-600'
                 : 'text-slate-400 hover:text-slate-600'

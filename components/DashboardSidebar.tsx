@@ -18,7 +18,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onExport
 }) => {
   return (
-    <div className="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-[120px] h-fit">
+    <div className="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-30 h-fit">
       <TelemetryCard status={controllerStatus} />
       <AuditTrail 
         logs={logs} 

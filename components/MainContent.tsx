@@ -133,7 +133,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   setNetworkMode
 }) => {
   return (
-    <main className="flex-1 p-3 md:p-8 max-w-[1920px] mx-auto w-full pb-24 md:pb-8">
+    <main className="flex-1 p-3 md:p-8 max-w-480 mx-auto w-full pb-24 md:pb-8">
       {showSettings ? (
         <SettingsView
           user={user}

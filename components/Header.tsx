@@ -34,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="px-3 md:px-6 py-2 md:py-4 bg-white/95 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200/50">
-        <div className="max-w-[1920px] mx-auto flex items-center justify-between">
+        <div className="max-w-480 mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-12">
             <div className="flex items-center gap-2 md:gap-3">
               <img src="/logo.png" className="w-7 h-7 md:w-10 md:h-10 rounded-lg" alt="SmartKey" />
@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </h1>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[7px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">v2.5.3</span>
-                  <div className={`flex items-center gap-1.5 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border transition-all flex-shrink-0 ${
+                  <div className={`flex items-center gap-1.5 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border transition-all shrink-0 ${
                     bluetoothStatus === 'connected' ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
                     : bluetoothStatus === 'scanning' || bluetoothStatus === 'connecting' ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm'
                     : 'bg-slate-100 border-slate-200 text-slate-600 shadow-sm'

@@ -13,7 +13,7 @@ export const ResourceUtilization: React.FC<ResourceUtilizationProps> = ({ slots,
       <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-3 mb-8">
         <i className="fa-solid fa-chart-simple text-blue-500"></i> Resource Utilization
       </h3>
-      <div className="space-y-6 flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[400px]">
+      <div className="space-y-6 flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-100">
         {[...slots].sort((a,b) => b.usageCount - a.usageCount).map(s => {
           // Normalize usage visualization based on twice the threshold for better visual context
           const usagePercent = Math.min(100, (s.usageCount / (config.maintenanceThreshold * 2)) * 100); 
