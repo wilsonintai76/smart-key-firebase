@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { KeySlot, UserAccount, SystemConfig, ControllerStatus } from '../types';
 import { IdentityList } from './IdentityList';
 import { CbmPanel } from './CbmPanel';
@@ -26,7 +26,6 @@ interface AdminHubProps {
   onActivateUser: (id: string) => void;
   onUnlockUser: (id: string) => void;
   onDeleteUser: (id: string) => void;
-  onAddUser?: (name: string, email: string, role: 'staff' | 'admin', contact?: string) => Promise<boolean>;
   onAddModule: () => void;
   onDeleteModule: (idx: number) => void;
   onUpdateSlotLabel: (id: number, label: string) => void;
@@ -67,7 +66,6 @@ export const AdminHub: React.FC<AdminHubProps> = ({
   onActivateUser,
   onUnlockUser,
   onDeleteUser,
-  onAddUser,
   onAddModule,
   onDeleteModule,
   onUpdateSlotLabel,
@@ -127,14 +125,6 @@ export const AdminHub: React.FC<AdminHubProps> = ({
   };
 
   if (!isAdminMode) return null;
-
-  // Add User (invite) state
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserContact, setNewUserContact] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'staff' | 'admin'>('staff');
-  const [addUserStatus, setAddUserStatus] = useState('');
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fadeIn relative">
@@ -240,73 +230,6 @@ export const AdminHub: React.FC<AdminHubProps> = ({
               () => onDeleteUser(id)
             )}
           />
-
-          {/* Add User Section */}
-          <div className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-slate-900 text-sm uppercase flex items-center gap-3">
-                <i className="fa-solid fa-user-plus text-emerald-600"></i> Invite User
-              </h3>
-              <button onClick={() => setShowAddUser(!showAddUser)}
-                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
-                <i className={`fa-solid ${showAddUser ? 'fa-times' : 'fa-plus'} mr-1`}></i>
-                {showAddUser ? 'Cancel' : 'Invite'}
-              </button>
-            </div>
-            {showAddUser && (
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-3 animate-fadeIn">
-                <p className="text-[10px] font-bold text-emerald-800 leading-relaxed">
-                  <i className="fa-solid fa-circle-info mr-1"></i>
-                  The invitee signs in with Google using this email address and receives the selected role automatically.
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2"><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Full Name</label>
-                    <input type="text" value={newUserName} onChange={e => setNewUserName(e.target.value)}
-                      placeholder="e.g. Ahmad" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400" />
-                  </div>
-                  <div className="col-span-2"><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Google Email</label>
-                    <input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)}
-                      placeholder="name@gmail.com" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400" />
-                  </div>
-                  <div><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Role</label>
-                    <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as 'staff' | 'admin')}
-                      className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400">
-                      <option value="staff">Staff</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                  <div><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Contact (Optional)</label>
-                    <input type="text" value={newUserContact} onChange={e => setNewUserContact(e.target.value)}
-                      placeholder="e.g. +60 12-345 6789" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400" />
-                  </div>
-                </div>
-                {addUserStatus && (
-                  <p className={`text-[10px] font-bold text-center ${addUserStatus.includes('success') ? 'text-emerald-600' : 'text-rose-500'}`}>{addUserStatus}</p>
-                )}
-                <button onClick={async () => {
-                  const email = newUserEmail.trim().toLowerCase();
-                  if (!newUserName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-                    setAddUserStatus('Full name and a valid email address are required.');
-                    return;
-                  }
-                  setAddUserStatus('Saving invite...');
-                  const ok = await (onAddUser
-                    ? onAddUser(newUserName.trim(), email, newUserRole, newUserContact.trim())
-                    : Promise.resolve(false));
-                  if (ok) {
-                    setAddUserStatus('success: invite saved.');
-                    setNewUserName(''); setNewUserEmail(''); setNewUserContact(''); setNewUserRole('staff');
-                    setShowAddUser(false);
-                  } else {
-                    setAddUserStatus('Failed. Admin rights are required to send an invite.');
-                  }
-                }}
-                  className="w-full py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-colors">
-                  Send Invite
-                </button>
-              </div>
-            )}
-          </div>
 
           <CbmPanel 
             slots={slots}

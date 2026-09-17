@@ -1,15 +1,13 @@
 /**
- * Realtime Database access for users, invites and the audit trail.
+ * Realtime Database access for users and the audit trail.
  *
  * Schema:
  *   /users/{uid}                  → name, email, avatar, role, contact, status, createdAt, lastLogin
- *   /invites/{email-with-commas}  → email, name, role, contact, createdBy  (admin pre-registration, claimed on first sign-in)
  *   /audit/{pushId}               → action, actorUid, actorName, actorEmail, slotLabel, pegState*, ts
  *   /meta/hasAdmin                → first-admin bootstrap flag
  */
 import { onValue, push, query, ref, remove, set, update, limitToLast } from 'firebase/database';
 import { getFirebaseAuth, getFirebaseDb } from './firebase';
-import { emailToKey, type Invite } from './firebaseAuth';
 
 export interface CloudUser {
   uid: string;
@@ -82,39 +80,6 @@ export async function deleteUserProfile(uid: string): Promise<boolean> {
     return true;
   } catch (err) {
     console.warn('[SmartKey] Profile delete failed:', err);
-    return false;
-  }
-}
-
-/**
- * Pre-register a member by email. They receive the invited role the first
- * time they sign in with that Google account.
- */
-export async function createInvite(email: string, invite: Invite): Promise<boolean> {
-  const database = db();
-  if (!database) return false;
-  const auth = getFirebaseAuth();
-  try {
-    await set(ref(database, `invites/${emailToKey(email)}`), {
-      ...invite,
-      email: email.trim().toLowerCase(),
-      createdAt: Date.now(),
-      createdBy: auth?.currentUser?.email || '',
-    });
-    return true;
-  } catch (err) {
-    console.warn('[SmartKey] Invite failed:', err);
-    return false;
-  }
-}
-
-export async function deleteInvite(email: string): Promise<boolean> {
-  const database = db();
-  if (!database) return false;
-  try {
-    await remove(ref(database, `invites/${emailToKey(email)}`));
-    return true;
-  } catch {
     return false;
   }
 }

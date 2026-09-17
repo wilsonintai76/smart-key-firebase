@@ -4,10 +4,9 @@
  * Auth is Google-only: the Firebase ID token is the app session, and the
  * profile (role, contact) lives in Realtime Database at `/users/{uid}`.
  *
- * First-run bootstrap rules:
- *  - An admin-created invite at `/invites/{email}` grants the invited role.
- *  - Otherwise the very first account to sign in becomes admin and claims
- *    `/meta/hasAdmin`; every later account defaults to `staff`.
+ * Bootstrap: the very first account to sign in becomes admin and claims
+ * `/meta/hasAdmin`; every later account defaults to `staff`. Admins promote
+ * people afterwards with the role toggle in the admin hub.
  */
 import {
   GoogleAuthProvider,
@@ -18,7 +17,7 @@ import {
   signOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { get, ref, remove, set } from 'firebase/database';
+import { get, ref, set } from 'firebase/database';
 import { getFirebaseAuth, getFirebaseDb, isFirebaseConfigured } from './firebase';
 
 export interface AppUser {
@@ -29,17 +28,6 @@ export interface AppUser {
   role: 'staff' | 'admin';
   contact?: string;
   status: 'active' | 'inactive' | 'locked';
-}
-
-export interface Invite {
-  name: string;
-  role: 'staff' | 'admin';
-  contact?: string;
-}
-
-/** Realtime Database keys cannot contain dots, so emails are stored comma-escaped. */
-export function emailToKey(email: string): string {
-  return (email || '').trim().toLowerCase().replace(/\./g, ',');
 }
 
 function fallbackAvatar(name: string, email: string): string {
@@ -110,7 +98,7 @@ export async function fetchUserProfile(uid: string): Promise<AppUser | null> {
 }
 
 /**
- * Ensure `/users/{uid}` exists and is current, applying any pending invite.
+ * Ensure `/users/{uid}` exists and is current.
  * This is what turns a Google account into an app user with a role.
  */
 export async function ensureUserProfile(fbUser: FirebaseUser): Promise<AppUser> {
@@ -133,21 +121,14 @@ export async function ensureUserProfile(fbUser: FirebaseUser): Promise<AppUser> 
     return refreshed;
   }
 
-  // New account — resolve role from a pending invite, else bootstrap the first admin.
-  const inviteKey = emailToKey(base.email);
-  const [inviteSnap, hasAdminSnap] = await Promise.all([
-    get(ref(db, `invites/${inviteKey}`)),
-    get(ref(db, 'meta/hasAdmin')),
-  ]);
-
-  const invite: Invite | null = inviteSnap.exists() ? (inviteSnap.val() as Invite) : null;
+  // New account — the first one ever becomes admin, everyone else is staff.
+  const hasAdminSnap = await get(ref(db, 'meta/hasAdmin'));
   const hasAdmin = hasAdminSnap.val() === true;
-  const role: 'staff' | 'admin' = invite?.role === 'admin' ? 'admin' : (!hasAdmin && !invite ? 'admin' : 'staff');
+  const role: 'staff' | 'admin' = hasAdmin ? 'staff' : 'admin';
 
   const profile: AppUser & { createdAt: number; lastLogin: number } = {
     ...base,
-    name: invite?.name || base.name,
-    contact: invite?.contact || '',
+    contact: '',
     role,
     status: 'active',
     createdAt: Date.now(),
@@ -160,7 +141,6 @@ export async function ensureUserProfile(fbUser: FirebaseUser): Promise<AppUser> 
   if (role === 'admin' && !hasAdmin) {
     await set(ref(db, 'meta/hasAdmin'), true);
   }
-  if (invite) await remove(ref(db, `invites/${inviteKey}`));
 
   return profile;
 }

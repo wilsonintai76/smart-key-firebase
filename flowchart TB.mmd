@@ -27,7 +27,7 @@ flowchart TB
 
     PWA <-->|"Web Bluetooth"| ESP
     PWA -->|"Sign in / session"| Auth
-    PWA -->|"Firebase SDK: users, audit, invites"| RTDB
+    PWA -->|"Firebase SDK: users, audit"| RTDB
     PWA -.->|"Offline: queue"| LS
     LS -.->|"Reconnect: flush + push audit"| RTDB
 

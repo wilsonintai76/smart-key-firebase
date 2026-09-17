@@ -140,7 +140,7 @@ export const Login: React.FC<LoginProps> = ({
 
             <p className="text-[10px] font-bold text-slate-400 leading-relaxed">
               Sign in with your organisation Google account.<br />
-              Access is granted by an administrator invitation.
+              New accounts join as staff — an admin can promote you.
             </p>
 
             {!isFirebaseConfigured && (

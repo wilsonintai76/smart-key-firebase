@@ -10,7 +10,7 @@ The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Boa
 1.  **Flash the ESP32** — Open `firmware/KeyCabinet/KeyCabinet.ino` in Arduino IDE and upload to your ESP32 Dev Board.
 2.  **Start the PWA** — `npm install && npm run dev`
 3.  **Connect** — Open the PWA on Chrome/Edge (Android or desktop), tap "Connect to Cabinet", pair with the "KeyCabinet" BLE device.
-4.  **Login** — Sign in with Google. The first account to sign in becomes the admin; everyone else needs an invite created by an admin.
+4.  **Login** — Sign in with Google. The first account to sign in becomes the admin; everyone else joins as `staff` and an admin can promote them from the admin hub.
 
 > **Hardware pins:** Relay → GPIO4, Microswitch → GPIO5, LED → GPIO2
 
@@ -155,13 +155,11 @@ npm run deploy:hosting  # build + deploy hosting only
 | Path | Purpose |
 |---|---|
 | `/users/{uid}` | Profile: name, email, avatar, role, contact, status, createdAt, lastLogin |
-| `/invites/{email}` | Admin pre-registration (dots escaped as commas); claimed on the invitee's first sign-in |
 | `/audit/{pushId}` | Append-only audit trail with actor identity and timestamp |
 | `/meta/hasAdmin` | Bootstrap flag — the first account to sign in becomes admin |
 
 ### Roles
 *   **First sign-in ever** → becomes `admin` and claims `/meta/hasAdmin`.
-*   **Invited email** → receives the role stored in `/invites/{email}`.
 *   **Everyone else** → `staff`. Role changes are admin-only and enforced in `database.rules.json`.
 
 ---

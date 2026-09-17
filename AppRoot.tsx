@@ -11,7 +11,7 @@ import { INITIAL_SLOTS, DEFAULT_SYSTEM_CONFIG } from './constants';
 import { bluetoothService } from './services/bluetoothService';
 import { queueAuditEvent, flushAuditQueue, getQueueLength } from './services/offlineQueue';
 import { consumeGoogleRedirectResult, signInWithGoogle, signOutUser, subscribeAuthUser } from './services/firebaseAuth';
-import { createInvite, deleteUserProfile, subscribeUsers, updateUserProfile, writeAuditEvent } from './services/firebaseUsers';
+import { deleteUserProfile, subscribeUsers, updateUserProfile, writeAuditEvent } from './services/firebaseUsers';
 import { isFirebaseConfigured } from './services/firebase';
 
 import { Login } from './components/Login';
@@ -329,16 +329,6 @@ export const App: React.FC = () => {
     setView('dashboard');
   };
 
-  const handleAdminAddUser = async (name: string, email: string, role: 'staff' | 'admin', contact?: string): Promise<boolean> => {
-    const ok = await createInvite(email, { name, role, contact });
-    if (ok) {
-      showToast({ title: 'Invite Created', message: `${name} can sign in with ${email} as ${role}.`, type: 'success' });
-    } else {
-      showToast({ title: 'Invite Failed', message: 'Could not save the invite. Admin rights are required.', type: 'danger' });
-    }
-    return ok;
-  };
-
   // ── Slot Actions (BLE-only) ─────────────────────────────────────
   const initiateUnlock = (id: number) => {
     const slot = slots.find(s => s.id === id);
@@ -448,7 +438,6 @@ export const App: React.FC = () => {
           setRegisteredUsers(prev => prev.filter(u => u.id !== id));
           deleteUserProfile(id).catch(() => {});
         }}
-        onAddUser={handleAdminAddUser}
         onAddModule={() => {
           setIsAddingModule(false);
           const newId = slots.length + 1;
