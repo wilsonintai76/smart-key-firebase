@@ -10,9 +10,9 @@ const ACTIVE_PINS = [
   },
   {
     pin: 'GPIO5',
-    role: 'End switch (NO)',
+    role: 'Peg switch 1',
     signal: 'Digital IN, pull-up',
-    note: 'One switch covers the whole module of 4 slots: LOW = every peg seated, HIGH = at least one key taken. Strapping pin — see the boot note.',
+    note: 'Peg 1 of module 1 in the 16-switch map. If you turn per-peg sensing off (PEG_SWITCH_COUNT 0) this pin becomes the one summary switch instead: LOW = every peg in the cabinet seated.',
   },
   {
     pin: 'GPIO2',
@@ -39,15 +39,26 @@ const FREE_PIN_GROUPS = [
   {
     pins: ['13', '14', '16', '17', '18', '19', '21', '22', '23', '25', '26', '27', '32', '33'],
     kind: 'Internal pull-up',
-    note: 'Wire exactly like GPIO5 — no external resistor needed.',
+    note: 'Wire exactly like GPIO5 — no external resistor needed. The 16-switch map claims all 14 of them.',
     accent: 'emerald',
   },
   {
     pins: ['34', '35', '36', '39'],
     kind: 'Input-only',
-    note: 'No internal pull-up exists on these four — add 10 kΩ to 3.3 V.',
+    note: 'No internal pull-up exists on these four — add 10 kΩ to 3.3 V. The 16-switch map uses GPIO34 for peg 16, leaving 35, 36 and 39 spare.',
     accent: 'amber',
   },
+];
+
+/**
+ * Where the stock firmware looks for the 16 per-peg switches, in slot order:
+ * entries 0-3 are module 1 pegs 1-4, and so on. Mirrors PEG_PINS in Config.h.
+ */
+const PEG_MAP = [
+  { module: 'Module 1', pins: '5 · 13 · 14 · 16' },
+  { module: 'Module 2', pins: '17 · 18 · 19 · 21' },
+  { module: 'Module 3', pins: '22 · 23 · 25 · 26' },
+  { module: 'Module 4', pins: '27 · 32 · 33 · 34' },
 ];
 
 const WIRING_STEPS = [
@@ -68,8 +79,8 @@ const WIRING_STEPS = [
   },
   {
     icon: 'fa-toggle-on',
-    title: '4. End switch (key sensor)',
-    body: 'Switch COM → GND, switch NO → GPIO5. Firmware enables the internal pull-up, so no resistor is needed and a seated key reads LOW. This single switch covers all 4 slots of the module — see "One Module = 4 Slots" below.',
+    title: '4. End switches (key sensors)',
+    body: 'Switch COM → GND, switch NO → its own signal pin. Firmware enables the internal pull-up, so no resistor is needed and a seated key reads LOW. The stock map gives every peg a pin — 4 per module — so see "One Module = 4 Slots" below before you cut wires.',
   },
   {
     icon: 'fa-lightbulb',
@@ -94,30 +105,30 @@ const COMMANDS = [
 ];
 
 /**
- * One "module" is 4 key slots (the app appends 4 rows per Add Module click), so a
- * single end switch can only ever describe the whole module. These are the two
- * ways to wire the pegs, and what each one actually tells the app.
+ * One "module" is 4 key slots (the app appends 4 rows per Add Module click), and
+ * PEG_SWITCH_COUNT decides whether a module reports per peg or as a single row.
+ * These are the two ways to wire the pegs, and what each one actually tells the app.
  */
 const SENSOR_MODES = [
   {
-    name: 'Row-level',
-    badge: 'Shipped firmware',
+    name: 'Per-peg',
+    badge: 'Default',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    cost: '1 switch · 1 GPIO',
-    tells: 'A key is missing from the module — not which peg.',
+    cost: '1 switch per peg · 4 GPIO per module',
+    tells: 'Exactly which of the 4 pegs is empty — measured, not guessed.',
     detail:
-      'Exactly what GPIO5 does today. You can also series-wire all four peg switches into that one pin: the circuit stays closed only while every peg is seated, which still tells you just "this row has a gap".',
-    change: 'No firmware change.',
+      'PEG_SWITCH_COUNT ships as 16, so the firmware reads one pin per peg, debounces each one separately, and reports the whole set as a bitmask. Every bit maps to its own KeySlot row, so the audit names the slot that actually moved.',
+    change: 'Flash as-is.',
   },
   {
-    name: 'Per-peg',
-    badge: 'Needs code',
+    name: 'Row-level',
+    badge: 'Opt-in',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-100',
-    cost: '4 switches · 4 GPIO',
-    tells: 'Exactly which of the 4 pegs is empty, independently.',
+    cost: '1 switch · 1 GPIO',
+    tells: 'That the module has a gap — not which peg.',
     detail:
-      'One switch per peg, each on its own pin. The firmware has to read all four pins and report them as a bitmask, and every switch maps to its own KeySlot row.',
-    change: 'Firmware + app change.',
+      'Set PEG_SWITCH_COUNT to 0 in Config.h to fall back to the single summary switch on GPIO5. You can also series-wire all four peg switches into that one pin: the circuit stays closed only while every peg is seated, which still tells you just "this row has a gap".',
+    change: 'Config.h: PEG_SWITCH_COUNT 0.',
   },
 ];
 
@@ -190,9 +201,9 @@ export const WiringGuide: React.FC = () => (
         </h4>
         <p className="text-[10px] text-slate-500 leading-relaxed">
           Adding a module in Control Hub creates <strong>4 key slots</strong>, so one row of your pegboard holds
-          <strong> 4 pegs</strong>, not one. The shipped firmware reads a single switch on <code>GPIO5</code>, so the
-          hardware reports the <strong>module</strong> as occupied or empty — the app then works out which peg was
-          taken by looking for the slot you just unlocked, rather than measuring it.
+          <strong> 4 pegs</strong>, not one. The shipped firmware puts one switch on each peg, so the cabinet reports
+          the <strong>individual peg</strong> that moved and the app simply believes it. Only the row-level fallback
+          leaves the app to infer which peg was taken by looking for the slot you just unlocked.
         </p>
       </div>
 
@@ -215,13 +226,13 @@ export const WiringGuide: React.FC = () => (
 
       <div className="p-4 bg-white rounded-2xl border border-slate-200">
         <p className="text-[9px] font-black uppercase text-rose-500 tracking-tight mb-1">
-          Attribution is inferred, not measured
+          Row-level mode infers the peg
         </p>
         <p className="text-[9px] text-slate-500 leading-relaxed">
-          When the switch opens, the app marks the slot sitting in <code>UNLOCKED</code> state as BORROWED; if no slot
-          is unlocked it falls back to the first <code>AVAILABLE</code> one. That is accurate while a single key leaves
-          at a time — take two together and the second is blamed on whichever slot happens to sort first. Only the
-          per-peg wiring removes that guess.
+          Only when <code>PEG_SWITCH_COUNT</code> is 0 does the app guess: it marks the slot sitting in
+          <code> UNLOCKED</code> state as BORROWED, and falls back to the first <code>AVAILABLE</code> one if none is.
+          That is accurate while a single key leaves at a time — take two together and the second is blamed on
+          whichever slot happens to sort first. Per-peg wiring removes that guess entirely.
         </p>
       </div>
     </div>
@@ -233,23 +244,50 @@ export const WiringGuide: React.FC = () => (
           <i className="fa-solid fa-diagram-project"></i> End Switch Capacity
         </h4>
         <p className="text-[10px] text-slate-500 leading-relaxed">
-          A WROOM-32 module has 34 GPIO pads, but flash, USB-serial and boot duties leave only <strong>18</strong> free
-          once the relay, sensor and LED are assigned. Add one switch per pin and share a single common ground return —
-          each extra switch costs one signal wire, not two.
+          A WROOM-32 module has 34 GPIO pads, but flash, USB-serial and boot duties leave <strong>19</strong> usable
+          switch channels once the relay and the LED are assigned. Give each switch its own pin and share a single
+          common ground return — each extra switch costs one signal wire, not two.
         </p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { value: '4', label: 'Slots per module', tone: 'text-blue-600' },
-          { value: '1', label: 'Switch per module', tone: 'text-amber-600' },
-          { value: '18', label: 'Free GPIO pads', tone: 'text-slate-900' },
+          { value: '16', label: 'Peg switches max', tone: 'text-blue-600' },
+          { value: '4', label: 'Modules sensed', tone: 'text-emerald-600' },
+          { value: '19', label: 'Switch channels', tone: 'text-slate-900' },
         ].map(card => (
           <div key={card.label} className="p-4 bg-white rounded-2xl border border-slate-200 text-center">
             <p className={`text-2xl font-black ${card.tone}`}>{card.value}</p>
             <p className="text-[8px] font-black uppercase text-slate-400 tracking-tight mt-1">{card.label}</p>
           </div>
         ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100">
+          <p className="text-[9px] font-black uppercase text-slate-900 tracking-tight">
+            Peg switch map <span className="text-slate-400">· PEG_PINS</span>
+          </p>
+          <p className="text-[9px] text-slate-400 mt-1">
+            16 switches fill 4 modules exactly and leave 3 pins over. A fifth module needs 20 switches — more than the
+            19 available — so 4 is the practical ceiling without dropping the status LED.
+          </p>
+        </div>
+        {PEG_MAP.map((row, i) => (
+          <div
+            key={row.module}
+            className={`flex items-center justify-between gap-4 px-4 py-2.5 ${i > 0 ? 'border-t border-slate-100' : ''}`}
+          >
+            <span className="text-[9px] font-black uppercase text-slate-500 tracking-tight">{row.module}</span>
+            <span className="font-mono text-[10px] font-bold text-slate-900">GPIO {row.pins}</span>
+          </div>
+        ))}
+        <div className="px-4 py-3 border-t border-slate-100 bg-amber-50">
+          <p className="text-[9px] text-amber-800/80 leading-relaxed">
+            Peg 16 is <code>GPIO34</code>, which is input-only and has no internal pull-up — fit a 10 kΩ resistor from
+            GPIO34 to 3.3 V for that one switch. The other fifteen need nothing.
+          </p>
+        </div>
       </div>
 
       {FREE_PIN_GROUPS.map(group => {
@@ -289,12 +327,21 @@ export const WiringGuide: React.FC = () => (
       </div>
 
       <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-        <p className="text-[9px] font-black uppercase text-amber-700 tracking-tight mb-1">Firmware limit, not hardware</p>
+        <p className="text-[9px] font-black uppercase text-amber-700 tracking-tight mb-1">
+          PEG_SWITCH_COUNT must match your wiring
+        </p>
         <p className="text-[9px] text-amber-800/80 leading-relaxed">
-          The current firmware reads exactly <strong>one</strong> switch (<code>GPIO5</code>) into a single
-          <code> keyPresent</code> flag, and the notify characteristic carries <strong>1 byte</strong> — so up to
-          <strong> 8</strong> switches can be reported as a bitmask with no protocol change. More than 8 needs a
-          multi-byte payload, and every switch also needs its own row in <code>KeySlot</code> to be audited per key.
+          <code>PEG_SWITCH_COUNT</code> is <strong>16</strong> and has to equal the number of switches actually
+          connected. An unwired pin floats high, which the firmware reports as "key removed" — flash 16 with three
+          pegs bare and those slots show <strong>Borrowed</strong> the moment the phone connects. Set it to the real
+          count, or to <strong>0</strong> for the single summary switch.
+        </p>
+        <p className="text-[9px] text-amber-800/80 leading-relaxed mt-2">
+          The pegs travel as a <strong>2-byte</strong> bitmask <code>[0x02][count][mask…]</code>, which fits inside the
+          default 20-byte notification, so no ATT MTU negotiation is involved. The frame carries a 16-bit mask, so 16
+          is the ceiling without widening the payload. Per-peg sensing is also what makes the audit exact: each bit
+          names its own <code>KeySlot</code> row, so the first status after connecting reconciles the slots silently
+          and only later changes are logged as take/return events.
         </p>
       </div>
     </div>

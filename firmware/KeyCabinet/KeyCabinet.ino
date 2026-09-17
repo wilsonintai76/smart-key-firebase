@@ -37,8 +37,10 @@ void loop() {
   // Release the solenoid when its unlock pulse expires
   serviceRelay();
 
-  // Check micro-switch status and notify if changed
+  // Sample each peg switch, debounce it, and notify on any change
   checkKeyStatus();
-  
-  delay(100); // Prevent watchdog issues
+
+  // One debounce sample per pass: 4 samples at 20 ms settles a contact in
+  // ~80 ms, so a quick grab-and-go still registers.
+  delay(20);
 }

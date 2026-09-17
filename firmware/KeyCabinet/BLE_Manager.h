@@ -12,6 +12,7 @@ BLEServer*          pServer = nullptr;
 BLECharacteristic*  pStatusCharacteristic = nullptr;
 bool                deviceConnected = false;
 bool                keyPresent = true;
+uint16_t            pegMask = 0;
 bool                timeSynced = false;
 int64_t             lastSyncMs = 0;
 

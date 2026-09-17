@@ -12,6 +12,7 @@ import { bluetoothService } from './services/bluetoothService';
 import { queueAuditEvent, flushAuditQueue, getQueueLength } from './services/offlineQueue';
 import { consumeGoogleRedirectResult, signInWithGoogle, signOutUser, subscribeAuthUser } from './services/firebaseAuth';
 import { deleteUserProfile, subscribeUsers, updateUserProfile, writeAuditEvent } from './services/firebaseUsers';
+import type { AuditEventPayload } from './services/firebaseUsers';
 import { isFirebaseConfigured } from './services/firebase';
 
 import { Login } from './components/Login';
@@ -95,6 +96,10 @@ export const App: React.FC = () => {
   const clearGlobalError = () => updateUI({ globalError: null });
 
   const [slots, setSlots] = useState<KeySlot[]>(INITIAL_SLOTS);
+  // Mirrors slots for BLE callbacks, which must not move side effects inside a
+  // state updater (StrictMode invokes updaters twice).
+  const slotsRef = useRef<KeySlot[]>(slots);
+  const pegMaskRef = useRef<{ pegCount: number; mask: number } | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [bluetoothStatus, setBluetoothStatus] = useState<BluetoothStatus>('disconnected');
   const isBluetoothConnected = bluetoothStatus === 'connected';
@@ -186,7 +191,7 @@ export const App: React.FC = () => {
 
   useEffect(() => { localStorage.setItem('smartkey_config', JSON.stringify(config)); }, [config]);
   useEffect(() => { localStorage.setItem('smartkey_users', JSON.stringify(registeredUsers)); }, [registeredUsers]);
-  useEffect(() => { localStorage.setItem('smartkey_slots', JSON.stringify(slots)); }, [slots]);
+  useEffect(() => { slotsRef.current = slots; localStorage.setItem('smartkey_slots', JSON.stringify(slots)); }, [slots]);
 
   // ── Version check: detect new deployments ──────────────────────
   useVersionCheck((current, latest) => {
@@ -307,6 +312,72 @@ export const App: React.FC = () => {
           return updated;
         }
       });
+    });
+    return () => unsub();
+  }, [user]);
+
+  // ── BLE Per-Peg Switches → Slot State + Cloud Audit (Realtime Database) ──
+  // Firmware where every peg has its own switch reports a bitmask instead of the
+  // single summary bit, so the slot that moved is known rather than inferred.
+  useEffect(() => {
+    const unsub = bluetoothService.onPegMask((pegCount, mask) => {
+      const previous = pegMaskRef.current;
+      const prevMask = previous && previous.pegCount === pegCount ? previous.mask : null;
+      // The first report of a session is a snapshot of the cabinet, not an
+      // event: adopt it without auditing or bumping usage counts.
+      const snapshot = prevMask === null;
+      pegMaskRef.current = { pegCount, mask };
+
+      const changed = new Map<number, boolean>();
+      for (let i = 0; i < pegCount; i++) {
+        const seated = (mask & (1 << i)) !== 0;
+        if (snapshot || seated !== (((prevMask ?? 0) & (1 << i)) !== 0)) changed.set(i, seated);
+      }
+      if (changed.size === 0) return;
+
+      const events: AuditEventPayload[] = [];
+      const updated = slotsRef.current.map((slot, idx) => {
+        if (!changed.has(idx)) return slot;
+        const seated = changed.get(idx) as boolean;
+
+        if (seated) {
+          if (slot.status === KeyStatus.AVAILABLE && !slot.borrowedBy) return slot;
+          if (!snapshot) {
+            events.push({ action: 'key_return', slotLabel: slot.label, pegStateBefore: slot.status, pegStateAfter: KeyStatus.AVAILABLE });
+          }
+          return {
+            ...slot, status: KeyStatus.AVAILABLE, lastUpdated: new Date().toISOString(),
+            borrowedBy: undefined, borrowerId: undefined, borrowedAt: undefined,
+          };
+        }
+
+        const wasUnlocked = slot.status === KeyStatus.UNLOCKED;
+        const alreadyOut = slot.status === KeyStatus.BORROWED;
+        if (alreadyOut && snapshot) return slot;
+        if (!snapshot) {
+          events.push({ action: 'key_take', slotLabel: slot.label, pegStateBefore: slot.status, pegStateAfter: KeyStatus.BORROWED });
+        }
+        return {
+          ...slot,
+          status: KeyStatus.BORROWED,
+          lastUpdated: new Date().toISOString(),
+          // Only an unlock the app issued tells us who took it; anything else is
+          // a peg that emptied on its own.
+          borrowedBy: wasUnlocked ? (user?.name || 'Unknown') : (slot.borrowedBy || 'Unknown'),
+          borrowerId: wasUnlocked ? (user?.id || 'unknown') : (slot.borrowerId || 'unknown'),
+          borrowedAt: slot.borrowedAt || new Date().toISOString(),
+          usageCount: alreadyOut || snapshot ? slot.usageCount : slot.usageCount + 1,
+        };
+      });
+
+      setSlots(updated);
+
+      if (user?.id) {
+        for (const event of events) {
+          if (navigator.onLine) writeAuditEvent(event).catch(() => {});
+          else queueAuditEvent(event);
+        }
+      }
     });
     return () => unsub();
   }, [user]);

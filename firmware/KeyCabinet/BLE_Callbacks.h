@@ -13,9 +13,7 @@ class MyServerCallbacks : public BLEServerCallbacks {
     digitalWrite(LED_PIN, HIGH);
     Serial.printf(">>> Phone CONNECTED (clock %s)\n", timeSynced ? "synced" : "not synced");
     // Push current end-switch state immediately so phone doesn't wait for a change
-    uint8_t statusByte = keyPresent ? 0x01 : 0x00;
-    pStatusCharacteristic->setValue(&statusByte, 1);
-    pStatusCharacteristic->notify();
+    notifyStatus();
   }
 
   void onDisconnect(BLEServer* pServer) override {

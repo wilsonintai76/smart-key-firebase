@@ -4,6 +4,8 @@ import { SERVICE_UUID, WRITE_CHAR_UUID, STATUS_CHAR_UUID } from './bleUuids';
 
 export type BluetoothStatus = 'disconnected' | 'scanning' | 'connecting' | 'connected' | 'error';
 export type KeyPresenceCallback = (keyPresent: boolean) => void;
+/** One bit per instrumented peg: bit i set = peg i seated, lowest slot first. */
+export type PegMaskCallback = (pegCount: number, mask: number) => void;
 
 export class BluetoothService {
   private device: BluetoothDevice | null = null;
@@ -18,6 +20,7 @@ export class BluetoothService {
   private onDataReceivedCallbacks: ((data: string) => void)[] = [];
   private onDiscoveryCallbacks: ((devices: BluetoothDevice[]) => void)[] = [];
   private onKeyPresenceCallbacks: KeyPresenceCallback[] = [];
+  private onPegMaskCallbacks: PegMaskCallback[] = [];
 
   // ── Status helpers ──────────────────────────────────────────────
 
@@ -54,6 +57,14 @@ export class BluetoothService {
     this.onKeyPresenceCallbacks.push(callback);
     return () => {
       this.onKeyPresenceCallbacks = this.onKeyPresenceCallbacks.filter(c => c !== callback);
+    };
+  }
+
+  /** Subscribe to per-peg switch reports, sent only by firmware with individual peg switches. */
+  public onPegMask(callback: PegMaskCallback) {
+    this.onPegMaskCallbacks.push(callback);
+    return () => {
+      this.onPegMaskCallbacks = this.onPegMaskCallbacks.filter(c => c !== callback);
     };
   }
 
@@ -179,8 +190,34 @@ export class BluetoothService {
 
   // ── Key Presence Notifications (ESP32 → PWA) ────────────────────
 
-  /** Process a DataView from the STATUS characteristic (0x01 = key in, 0x00 = taken) */
+  /**
+   * STATUS characteristic frames:
+   *   1 byte  — legacy summary switch: 0x01 = a key is seated, 0x00 = taken.
+   *             The slot that moved is inferred by the caller.
+   *   0x02…   — per-peg bitmask: [0x02][count][mask lo][mask hi], LSB first,
+   *             bit i = peg i seated. The slot is known, not inferred.
+   */
   private processStatusValue(dv: DataView) {
+    if (dv.byteLength >= 2 && dv.getUint8(0) === 0x02) {
+      const pegCount = Math.min(dv.getUint8(1), 16);
+      if (pegCount === 0) return;
+
+      let mask = 0;
+      for (let b = 0; b < Math.ceil(pegCount / 8) && 2 + b < dv.byteLength; b++) {
+        mask |= dv.getUint8(2 + b) << (8 * b);
+      }
+
+      this.onPegMaskCallbacks.forEach(cb => cb(pegCount, mask));
+
+      // Keep the cabinet-level telemetry meaningful: "taken" when any
+      // instrumented peg is empty.
+      const allSeated = (1 << pegCount) - 1;
+      const anyTaken = (mask & allSeated) !== allSeated;
+      this.onDataReceivedCallbacks.forEach(cb => cb(anyTaken ? 'KEY_TAKEN' : 'KEY_RETURNED'));
+      return;
+    }
+
+    if (dv.byteLength !== 1) return;
     const byte = dv.getUint8(0);
     if (byte !== 0x00 && byte !== 0x01) return;
     const keyPresent = byte === 0x01;

@@ -2,7 +2,7 @@
 # SmartKey v3 — Key Management System
 
 ## System Overview
-The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Board with a relay (solenoid lock) and microswitch detects key presence. The React PWA connects directly via Web Bluetooth (BLE), authenticates users with Google Sign-In (Firebase Auth), and logs all key events to Firebase Realtime Database.
+The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Board with a relay (solenoid lock) and one microswitch per key peg detects key presence. The React PWA connects directly via Web Bluetooth (BLE), authenticates users with Google Sign-In (Firebase Auth), and logs all key events to Firebase Realtime Database.
 
 ---
 
@@ -12,7 +12,7 @@ The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Boa
 3.  **Connect** — Open the PWA on Chrome/Edge (Android or desktop), tap "Connect to Cabinet", pair with the "KeyCabinet" BLE device.
 4.  **Login** — Sign in with Google. The first account to sign in becomes the admin; everyone else joins as `staff` and an admin can promote them from the admin hub.
 
-> **Hardware pins:** Relay → GPIO4, Microswitch → GPIO5, LED → GPIO2
+> **Hardware pins:** Relay → GPIO4, Peg switches → `PEG_PINS[16]` starting at GPIO5, LED → GPIO2
 
 ---
 
@@ -30,6 +30,10 @@ The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Boa
                             └── NO ──┐ lever microswitch (SPDT)
        GND ──────────────────── COM ──┘
 ```
+
+GPIO5 is peg 1 of the default 16-switch map; the remaining pegs use GPIO13, 14,
+16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 and 34, in that order, and every
+switch shares the same ground return. See section ② below.
 
 ### ① Relay Module → Solenoid Lock (GPIO4)
 
@@ -58,24 +62,31 @@ suppression.
      supply and switch it through the relay contacts.
 ```
 
-### ② Microswitch — Key Detection (GPIO5)
+### ② Microswitches — Key Detection (one per peg)
 
 ```
-       GPIO5 ────────── NO  ┐
+    PEG_PINS[i] ────── NO  ┐
                             ├── lever microswitch (SPDT, 5 A)
-       GND   ────────── COM ┘
+    GND         ────── COM ┘
 
   Use NO (Normally Open), wired to GND — no external pull-up resistor needed:
-  the ESP32's internal pull-up is enabled in firmware (`INPUT_PULLUP`).
+  the ESP32's internal pull-up is enabled in firmware.
 
-  Key IN  (lever pressed) → contact closed to GND → GPIO5 = LOW
-  Key OUT (lever released) → contact open          → GPIO5 = HIGH
+  Key IN  (lever pressed) → contact closed to GND → pin = LOW  → bit set
+  Key OUT (lever released) → contact open          → pin = HIGH → bit clear
+
+  PEG_SWITCH_COUNT in Config.h must equal the number of switches you wired.
+  The default PEG_PINS[16] map gives every peg its own pin, 4 per module:
+
+    module 1 → GPIO5, 13, 14, 16      module 3 → GPIO22, 23, 25, 26
+    module 2 → GPIO17, 18, 19, 21     module 4 → GPIO27, 32, 33, 34
 
   ⚠️ Do NOT use the NC contact: pressing the lever *opens* NC, which inverts
      the reading and reports the key as taken while it is seated.
-  ⚠️ Do not add a 10 kΩ resistor to 3.3 V here — it fights the internal
-     pull-up. If the cable run is long, add 10 kΩ in series at GPIO5 plus
-     100 nF to GND instead, for noise filtering.
+  ⚠️ Do not add a 10 kΩ pull-up on any pin except GPIO34 — it fights the
+     internal pull-up. GPIO34 is input-only and has none, so peg 16 does need
+     10 kΩ to 3.3 V. If a cable run is long, add 10 kΩ in series at the pin
+     plus 100 nF to GND instead, for noise filtering.
 ```
 
 ### ③ Status LED (GPIO2)
@@ -149,15 +160,31 @@ anything it does not recognise to Serial.
 
 ### Adding More End Switches
 
-One switch per free GPIO is possible; the in-app **System Manual → Pin Map &
-Wiring Guide** lists the safe pins and how many are left. Two of the limits are
-in firmware rather than hardware:
+One switch per peg, up to **16** — which is exactly 4 modules of 4 pegs. The
+in-app **System Manual → Pin Map & Wiring Guide** lists the pin map plus the pins
+left spare.
 
-* `checkKeyStatus()` reads a single pin into one `keyPresent` flag, and the
-  notify characteristic carries **1 byte** — so up to 8 switches can be reported
-  as a bitmask with no protocol change.
-* Beyond 8, the notification needs a multi-byte payload, and each switch needs
-  its own `KeySlot` row to be audited per key.
+`PEG_SWITCH_COUNT` in `firmware/KeyCabinet/Config.h` controls it and **must equal
+the number of switches actually wired** — an unwired pin floats high, which the
+firmware reports as "key removed", so those slots would show as Borrowed as soon
+as a phone connects:
+
+| `PEG_SWITCH_COUNT` | Behaviour |
+| --- | --- |
+| `16` (default) | One pin per peg. `PEG_PINS[]` maps 16 switches onto 4 modules of 4. |
+| `1`–`15` | Only the first *n* entries of `PEG_PINS[]` are read; the rest of the mask stays clear. |
+| `0` | Legacy: one summary switch on `MICRO_SWITCH` (GPIO5) covering the whole cabinet. |
+
+Status notifications carry a **2-byte** little-endian bitmask framed as
+`[0x02][count][mask lo][mask hi…]`, bit *i* = peg *i* seated. Sixteen pegs is 4
+bytes, well inside the default 20-byte notification payload, so no ATT MTU
+negotiation is needed. With `PEG_SWITCH_COUNT 0` the board sends the original
+single byte (`0x00`/`0x01`) instead, and the app falls back to inferring which
+peg moved from the slot it last unlocked.
+
+In per-peg mode every bit names its own `KeySlot` row, so the first status of a
+session only reconciles the slots — no audit entry, no usage count — and later
+edges are logged as take/return events against the exact slot.
 
 ---
 
