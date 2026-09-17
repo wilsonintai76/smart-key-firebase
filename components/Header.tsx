@@ -37,10 +37,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-[1920px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-12">
             <div className="flex items-center gap-2 md:gap-3">
-              <img src="/logo.png" className="w-7 h-7 md:w-10 md:h-10 rounded-lg" alt="SecureKey" />
+              <img src="/logo.png" className="w-7 h-7 md:w-10 md:h-10 rounded-lg" alt="SmartKey" />
               <div>
                 <h1 className="text-sm md:text-lg font-black tracking-tight leading-none text-slate-900">
-                  SecureKey
+                  SmartKey
                 </h1>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[7px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">v2.5.3</span>

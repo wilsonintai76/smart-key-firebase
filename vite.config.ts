@@ -17,8 +17,8 @@ export default defineConfig(() => {
           registerType: 'autoUpdate',
           includeAssets: ['icon-192.png', 'icon-512.png', 'logo.png'],
           manifest: {
-            name: 'SecureKey',
-            short_name: 'SecureKey',
+            name: 'SmartKey',
+            short_name: 'SmartKey',
             theme_color: '#0f172a',
             start_url: '/',
             version: pkgVersion,

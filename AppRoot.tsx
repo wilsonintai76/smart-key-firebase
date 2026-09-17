@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 // @ts-ignore
 const APP_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : 'dev';
-console.log('[SecureKey] v' + APP_VERSION);
+console.log('[SmartKey] v' + APP_VERSION);
 import { useVersionCheck } from './hooks/useVersionCheck';
 import {
   KeySlot, LogEntry, UserAccount as UserProfileData,

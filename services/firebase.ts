@@ -1,6 +1,6 @@
 /**
  * Firebase bootstrap — Hosting (deploy), Realtime Database (data) and
- * Google Sign-In (auth) for SecureKey.
+ * Google Sign-In (auth) for SmartKey.
  *
  * Web app config values are public by design (they ship in the bundle);
  * access control lives in `database.rules.json`.

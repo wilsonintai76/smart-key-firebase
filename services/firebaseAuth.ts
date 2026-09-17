@@ -91,7 +91,7 @@ export async function consumeGoogleRedirectResult(): Promise<FirebaseUser | null
     const result = await getRedirectResult(auth);
     return result?.user ?? null;
   } catch (err) {
-    console.warn('[SecureKey] Google redirect sign-in failed:', err);
+    console.warn('[SmartKey] Google redirect sign-in failed:', err);
     return null;
   }
 }
@@ -189,7 +189,7 @@ export function subscribeAuthUser(onUser: (user: AppUser | null) => void): () =>
       onUser(await ensureUserProfile(fbUser));
     } catch (err) {
       // Offline or rules rejected the profile write — keep the user signed in.
-      console.warn('[SecureKey] Profile sync failed, using Google account data:', err);
+      console.warn('[SmartKey] Profile sync failed, using Google account data:', err);
       onUser(profileFromFirebaseUser(fbUser));
     }
   });

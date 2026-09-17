@@ -50,7 +50,7 @@ export const Login: React.FC<LoginProps> = ({
             <i className="fa-solid fa-tower-broadcast text-4xl text-blue-600"></i>
           </div>
 
-          <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">SecureKey</h1>
+          <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">SmartKey</h1>
           <p className="text-slate-500 mb-8 text-sm font-bold uppercase tracking-widest opacity-60">Key Management System</p>
 
           <div className="space-y-4 animate-fadeIn">

@@ -1,8 +1,8 @@
 
-# SecureKey v3 — Key Management System
+# SmartKey v3 — Key Management System
 
 ## System Overview
-The **SecureKey** is a PWA-controlled IoT key management system. An ESP32 Dev Board with a relay (solenoid lock) and microswitch detects key presence. The React PWA connects directly via Web Bluetooth (BLE), authenticates users with Google Sign-In (Firebase Auth), and logs all key events to Firebase Realtime Database.
+The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Board with a relay (solenoid lock) and microswitch detects key presence. The React PWA connects directly via Web Bluetooth (BLE), authenticates users with Google Sign-In (Firebase Auth), and logs all key events to Firebase Realtime Database.
 
 ---
 

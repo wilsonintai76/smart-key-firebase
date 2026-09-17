@@ -56,7 +56,7 @@ export function subscribeUsers(onUsers: (users: CloudUser[]) => void): () => voi
       });
       onUsers(users);
     },
-    (error) => console.warn('[SecureKey] User subscription failed:', error.message)
+    (error) => console.warn('[SmartKey] User subscription failed:', error.message)
   );
 }
 
@@ -68,7 +68,7 @@ export async function updateUserProfile(uid: string, fields: Partial<CloudUser>)
     await update(ref(database, `users/${uid}`), fields as Record<string, unknown>);
     return true;
   } catch (err) {
-    console.warn('[SecureKey] Profile update failed:', err);
+    console.warn('[SmartKey] Profile update failed:', err);
     return false;
   }
 }
@@ -81,7 +81,7 @@ export async function deleteUserProfile(uid: string): Promise<boolean> {
     await remove(ref(database, `users/${uid}`));
     return true;
   } catch (err) {
-    console.warn('[SecureKey] Profile delete failed:', err);
+    console.warn('[SmartKey] Profile delete failed:', err);
     return false;
   }
 }
@@ -103,7 +103,7 @@ export async function createInvite(email: string, invite: Invite): Promise<boole
     });
     return true;
   } catch (err) {
-    console.warn('[SecureKey] Invite failed:', err);
+    console.warn('[SmartKey] Invite failed:', err);
     return false;
   }
 }
@@ -142,7 +142,7 @@ export async function writeAuditEvent(event: AuditEventPayload): Promise<boolean
     });
     return true;
   } catch (err) {
-    console.warn('[SecureKey] Audit write failed:', err);
+    console.warn('[SmartKey] Audit write failed:', err);
     return false;
   }
 }
@@ -162,6 +162,6 @@ export function subscribeAuditEvents(
       const events = Object.entries(value).map(([id, raw]) => ({ id, ...(raw as any) }));
       onEvents(events);
     },
-    (error) => console.warn('[SecureKey] Audit subscription failed:', error.message)
+    (error) => console.warn('[SmartKey] Audit subscription failed:', error.message)
   );
 }
