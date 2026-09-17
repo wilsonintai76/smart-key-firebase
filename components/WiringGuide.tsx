@@ -137,7 +137,7 @@ export const WiringGuide: React.FC = () => (
     </div>
 
     {/* Polarity / first power-up */}
-    <div className="p-6 bg-slate-900 rounded-[32px] text-white relative overflow-hidden">
+    <div className="relative overflow-hidden p-6 bg-slate-900 rounded-4xl text-white">
       <h4 className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-2 mb-4">
         <i className="fa-solid fa-triangle-exclamation"></i> First Power-Up Checks
       </h4>
@@ -155,7 +155,7 @@ export const WiringGuide: React.FC = () => (
     </div>
 
     {/* End switch capacity */}
-    <div className="p-6 bg-slate-50 border border-slate-200 rounded-[32px] space-y-5">
+    <div className="p-6 bg-slate-50 border border-slate-200 rounded-4xl space-y-5">
       <div>
         <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2 mb-2">
           <i className="fa-solid fa-diagram-project"></i> End Switch Capacity

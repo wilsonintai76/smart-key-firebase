@@ -118,7 +118,7 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
                  </p>
                </div>
              </div>
-             <i className="fa-solid fa-microchip absolute -right-12 -bottom-12 text-[200px] text-white/[0.03] rotate-12 pointer-events-none"></i>
+             <i className="fa-solid fa-microchip absolute -right-12 -bottom-12 text-[200px] text-white/3 rotate-12 pointer-events-none"></i>
           </div>
 
           {/* New Section: Hybrid Offline Architecture */}
@@ -175,7 +175,7 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
           <WiringGuide />
 
           {/* Section: Cloud Backend Reference */}
-          <div className="p-6 bg-slate-50 border border-slate-200 rounded-[32px] mb-6">
+          <div className="p-6 bg-slate-50 border border-slate-200 rounded-4xl mb-6">
              <h3 className="text-[10px] font-black uppercase text-slate-500 mb-4 tracking-widest flex items-center gap-2">
                <i className="fa-solid fa-cloud"></i> Firebase Backend
              </h3>
