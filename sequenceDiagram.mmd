@@ -4,10 +4,10 @@ sequenceDiagram
     actor User
     participant PWA as PWA (Browser)
     participant ESP as ESP32
-    participant Cloud as Cloudflare API
+    participant Cloud as Firebase Realtime Database
 
-    User->>PWA: Login (User ID + PIN)
-    PWA->>PWA: Verify credentials
+    User->>PWA: Sign in with Google
+    PWA->>PWA: Firebase Auth session
 
     User->>PWA: Tap "Unlock"
     PWA->>ESP: BLE: unlock command (0x01)
@@ -19,8 +19,8 @@ sequenceDiagram
     ESP-->>PWA: BLE notify: key TAKEN/RETURNED
 
     alt Online
-        PWA->>Cloud: POST audit event
-        Cloud->>Cloud: Store in D1 (SQLite)
+        PWA->>Cloud: push audit event
+        Cloud->>Cloud: Store under /audit/{pushId}
     else Offline
         PWA->>PWA: Queue in localStorage
         Note over PWA,Cloud: Flushed when connectivity resumes

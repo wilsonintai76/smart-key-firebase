@@ -119,7 +119,7 @@ export const App: React.FC = () => {
   // ── Init: Load local data + try session recovery ────────────────
   useEffect(() => {
     const stored = localStorage.getItem('smartkey_config');
-    if (stored) { try { const parsed = JSON.parse(stored); parsed.biometricEnabled = true; setConfig(parsed); setTempConfig(parsed); } catch {} }
+    if (stored) { try { const parsed = JSON.parse(stored); setConfig(parsed); setTempConfig(parsed); } catch {} }
     const storedUsers = localStorage.getItem('smartkey_users');
     if (storedUsers) { try { setRegisteredUsers(JSON.parse(storedUsers)); } catch {} }
     const storedSlots = localStorage.getItem('smartkey_slots');

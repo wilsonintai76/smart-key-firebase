@@ -125,7 +125,7 @@ The ESP32 dev board has **no RTC and no backup battery** — it is powered strai
 *   **Frontend:** React 18, TypeScript, Tailwind CSS, Vite PWA.
 *   **Database:** Firebase Realtime Database (`database.rules.json` holds the security rules).
 *   **Offline Queue:** `localStorage` (lightweight, no dependencies).
-*   **Architecture:** Cloud-native with BLE + Firebase SDK.
+*   **Architecture:** Static PWA (Firebase Hosting) + BLE to the ESP32; the browser talks to Realtime Database directly through the Firebase SDK — there is no server-side runtime.
 
 ---
 
@@ -177,33 +177,23 @@ $$Health \% = 100 - \left( \frac{\text{UsageCount}}{\text{Threshold}} \times 100
 
 ---
 
-## Mobile App (Capacitor)
+## Mobile Usage (PWA only)
 
-The PWA can be wrapped as a native Android/iOS app using **Capacitor**.
+There is no native wrapper — the app is a single web bundle served from Firebase Hosting and is designed mobile-first (installed to the home screen, full-screen, works on phone-sized viewports).
 
-### Prerequisites
-- **Android:** Android Studio + SDK 34+
-- **iOS:** Xcode 16+ (macOS only)
+### Install on a phone
+1. Open `https://smart-key-firebase.web.app` in a supported browser.
+2. Use the browser menu → **Add to Home Screen** / **Install app**.
+3. Sign in with Google, then pair the cabinet over Bluetooth.
 
-### Build & Run
+### Browser requirements
 
-```bash
-# Build web app + sync to native projects
-npm run build:mobile
-
-# Open in native IDE
-npm run open:android   # Android Studio
-npm run open:ios       # Xcode
-```
-
-### Native plugins
-| Feature | Android | iOS | Plugin |
-|---|---|---|---|
-| BLE | ✅ | ✅ | `@capacitor-community/bluetooth-le` |
-| Biometrics | ✅ Fingerprint | ✅ Face ID | `@capgo/capacitor-native-biometric` |
-| Local DB | ✅ SQLite | ✅ SQLite | `@capacitor-community/sqlite` |
+| Platform | Browser | Notes |
+|---|---|---|
+| Android | Chrome / Edge | Web Bluetooth + Google Sign-In both supported |
+| Desktop | Chrome / Edge | Web Bluetooth + Google Sign-In both supported |
+| iOS | Bluefy / WebBLE | Safari has no Web Bluetooth; sign-in works anywhere |
 
 ### Architecture
-- **Web mode (PWA):** Uses Web Bluetooth + Google Sign-In (Firebase) + localStorage/offline queue
-- **Native mode:** Uses Capacitor BLE + native biometrics + on-device SQLite
-- Auto-detected at runtime via `Capacitor.isNativePlatform()`
+- **Web mode (PWA):** Web Bluetooth for the ESP32 + Google Sign-In (Firebase Auth) for identity + Firebase Realtime Database for shared state, with a `localStorage` offline queue that flushes on reconnect.
+- No Capacitor/native bridge, no local SQLite: all persistence is RTDB plus the offline queue.

@@ -48,7 +48,6 @@ export interface SystemConfig {
   maintenanceThreshold: number;
   systemID: string;
   sessionTimeout: number;
-  biometricEnabled: boolean; // toggle fingerprint/FaceID WebAuthn
 }
 
 export type BluetoothStatus = 'disconnected' | 'scanning' | 'connecting' | 'connected' | 'error';

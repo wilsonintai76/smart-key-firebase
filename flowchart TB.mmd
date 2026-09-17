@@ -7,23 +7,18 @@ flowchart TB
         ESP --> Relay & Switch & LED
     end
 
-    subgraph PWA["📱 PWA (Cloudflare Pages)"]
+    subgraph PWA["📱 PWA (Firebase Hosting)"]
         Login["Login Screen"]
-        Setup["First Time Setup"]
         Dashboard["Dashboard"]
         Admin["Admin Hub"]
-        Login -->|"new user?"| Setup
-        Setup -->|"create admin"| Login
-        Login -->|"4-Digit ID + PIN"| Dashboard
-        Login -->|"Fingerprint/Face ID"| Dashboard
+        Login -->|"Google Sign-In"| Dashboard
         Dashboard --> Admin
     end
 
-    subgraph Cloud["☁️ Cloudflare Backend"]
-        Worker["Hono Worker"]
-        D1[("D1 Database (SQLite)")]
-        KV[("KV Namespace")]
-        Worker --> D1 & KV
+    subgraph Cloud["☁️ Firebase"]
+        Auth["Authentication (Google)"]
+        RTDB[("Realtime Database")]
+        Auth --> RTDB
     end
 
     subgraph Offline["📦 Offline Queue"]
@@ -31,10 +26,10 @@ flowchart TB
     end
 
     PWA <-->|"Web Bluetooth"| ESP
-    PWA -->|"WebAuthn API"| Worker
-    PWA -->|"Online: direct POST"| Worker
+    PWA -->|"Sign in / session"| Auth
+    PWA -->|"Firebase SDK: users, audit, invites"| RTDB
     PWA -.->|"Offline: queue"| LS
-    LS -.->|"Reconnect: flush"| Worker
+    LS -.->|"Reconnect: flush + push audit"| RTDB
 
     style Hardware fill:#1a1a2e,color:#e94560,stroke:#e94560
     style PWA fill:#0f3460,color:#00b4d8,stroke:#00b4d8

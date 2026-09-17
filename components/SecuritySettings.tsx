@@ -11,17 +11,6 @@ interface SecuritySettingsProps {
 
 export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, config, setConfig, onShowToast }) => {
 
-  const toggleBiometric = () => {
-    setConfig(prev => ({ ...prev, biometricEnabled: !prev.biometricEnabled }));
-    onShowToast({
-      title: config.biometricEnabled ? 'Biometric Disabled' : 'Biometric Enabled',
-      message: config.biometricEnabled
-        ? 'Fingerprint/FaceID sign-in turned off.'
-        : 'Users can now sign in with fingerprint or Face ID.',
-      type: config.biometricEnabled ? 'warning' : 'success'
-    });
-  };
-
   const updateTimeout = (minutes: number) => {
     setConfig(prev => ({ ...prev, sessionTimeout: minutes }));
   };
@@ -68,24 +57,6 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, config
                 <span className="text-[8px] font-black text-slate-300 uppercase">2 Hours</span>
               </div>
             </div>
-          </div>
-
-          <div className="flex justify-between items-center p-4 md:p-6 bg-slate-50 rounded-[24px] md:rounded-[32px] border border-slate-100">
-            <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 transition-all ${config.biometricEnabled ? 'bg-purple-500 text-white shadow-purple-100' : 'bg-slate-200 text-slate-400'}`}>
-                <i className="fa-solid fa-fingerprint text-sm md:text-base"></i>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] md:text-xs font-black text-slate-900 uppercase mb-0.5 truncate">Biometric Sign-In</p>
-                <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-tight truncate">Fingerprint / Face ID</p>
-              </div>
-            </div>
-            <button 
-              onClick={toggleBiometric}
-              className={`w-12 h-6 md:w-14 md:h-7 rounded-full relative transition-all duration-300 shrink-0 ml-3 ${config.biometricEnabled ? 'bg-purple-500' : 'bg-slate-300'}`}
-            >
-              <div className={`absolute top-0.5 md:top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${config.biometricEnabled ? 'left-6 md:left-8' : 'left-0.5 md:left-1'}`}></div>
-            </button>
           </div>
         </div>
 
