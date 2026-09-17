@@ -161,6 +161,7 @@ npm run deploy:hosting  # build + deploy hosting only
 ### Roles
 *   **First sign-in ever** → becomes `admin` and claims `/meta/hasAdmin`.
 *   **Everyone else** → `staff`. Role changes are admin-only and enforced in `database.rules.json`.
+*   Role changes reach an already-signed-in session immediately (the profile is synced from the live `/users` subscription — no reload needed), and a demoted user is dropped back to the dashboard. Because the rules read `role` from the database, a promoted user's admin actions are authorized without a token refresh.
 
 ---
 
