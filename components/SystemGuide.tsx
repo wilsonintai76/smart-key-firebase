@@ -10,7 +10,7 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[150] flex items-center justify-center p-4 md:p-8 animate-fadeIn">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-150 flex items-center justify-center p-4 md:p-8 animate-fadeIn">
       <div className="bg-white rounded-[48px] shadow-2xl p-8 md:p-12 max-w-4xl w-full relative border border-white/20 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex justify-between items-start mb-10 shrink-0">

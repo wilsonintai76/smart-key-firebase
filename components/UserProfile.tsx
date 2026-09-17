@@ -49,7 +49,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, isAdminMode, onL
       </button>
 
       {showProfileMenu && (
-        <div className="absolute right-0 mt-3 w-72 bg-white rounded-[40px] shadow-2xl p-6 text-slate-900 z-[100] border border-slate-100 animate-fadeIn overflow-hidden">
+        <div className="absolute right-0 mt-3 w-72 bg-white rounded-[40px] shadow-2xl p-6 text-slate-900 z-100 border border-slate-100 animate-fadeIn overflow-hidden">
           {/* Header Section from Screenshot */}
           <div className="flex items-center gap-4 mb-5">
             <img src={user.avatar} className="w-14 h-14 rounded-full border-2 border-slate-50 shadow-sm" alt="" />

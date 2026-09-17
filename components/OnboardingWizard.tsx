@@ -121,7 +121,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, onComp
   );
 
   return (
-    <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-200 flex items-center justify-center p-4">
       <div className="bg-white rounded-[40px] p-8 md:p-10 max-w-md w-full relative shadow-2xl border-t-4 border-blue-500 animate-fadeIn">
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
