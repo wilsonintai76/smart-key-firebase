@@ -42,6 +42,9 @@ export class BluetoothService {
 
     onCapacitorBleStatus(status => {
       this.setStatus(status as BluetoothStatus);
+      // Native connect completion only surfaces as a status event, so sync the
+      // cabinet clock here too (it has no RTC of its own).
+      if (status === 'connected') void this.syncDeviceTime();
     });
 
     onCapacitorBleData(data => {
@@ -202,6 +205,9 @@ export class BluetoothService {
       } catch { /* ignore if characteristic is notify-only */ }
 
       this.setStatus('connected');
+      // The cabinet has no RTC, so hand it the phone's wall clock (and again on
+      // every reconnect) — it keeps time with millis() afterwards.
+      await this.syncDeviceTime();
       console.log('BLE connected to KeyCabinet:', device.name);
     } catch (error: any) {
       console.error('Bluetooth connection failed:', error?.message || String(error));
@@ -291,6 +297,36 @@ export class BluetoothService {
     } catch (error: any) {
       console.error('Failed to send command:', error?.message || String(error));
       throw error;
+    }
+  }
+
+  // ── Clock Sync (PWA → ESP32) ───────────────────────────────────
+
+  /**
+   * Push the phone's clock to the ESP32 as `TIME:<epochMs>`. The board has no
+   * RTC or backup battery, so this is its only wall-clock source; the firmware
+   * rejects implausible values and reports the state over Serial.
+   */
+  public async syncDeviceTime(): Promise<boolean> {
+    if (isNative) {
+      try {
+        await sendCapacitorBleCommand(`TIME:${Date.now()}`);
+        return true;
+      } catch (err: any) {
+        console.warn('Clock sync failed:', err?.message || String(err));
+        return false;
+      }
+    }
+    if (!this.writeCharacteristic) return false;
+
+    try {
+      const data = new TextEncoder().encode(`TIME:${Date.now()}\n`);
+      await this.writeCharacteristic.writeValue(data);
+      console.log('Clock synced to KeyCabinet');
+      return true;
+    } catch (err: any) {
+      console.warn('Clock sync failed:', err?.message || String(err));
+      return false;
     }
   }
 

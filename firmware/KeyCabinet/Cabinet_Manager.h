@@ -30,7 +30,12 @@ void checkKeyStatus() {
       Serial.print(">>> Key status updated: ");
       Serial.println(keyPresent ? "IN cabinet" : "TAKEN by user");
     } else {
-      Serial.println(">>> Key status changed, but phone offline. Log locally.");
+      int64_t now = currentEpochMs();
+      if (now > 0) {
+        Serial.printf(">>> Key status changed, phone offline. Log locally @ %lld\n", (long long)now);
+      } else {
+        Serial.println(">>> Key status changed, phone offline. Log locally (clock not synced)");
+      }
     }
   }
 }

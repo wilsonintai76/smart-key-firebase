@@ -12,6 +12,8 @@ BLEServer*          pServer = nullptr;
 BLECharacteristic*  pStatusCharacteristic = nullptr;
 bool                deviceConnected = false;
 bool                keyPresent = true;
+bool                timeSynced = false;
+int64_t             lastSyncMs = 0;
 
 void initBLE() {
   // 1. Initialize Device

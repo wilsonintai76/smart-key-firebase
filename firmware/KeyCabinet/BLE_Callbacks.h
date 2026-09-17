@@ -11,7 +11,7 @@ class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) override {
     deviceConnected = true;
     digitalWrite(LED_PIN, HIGH);
-    Serial.println(">>> Phone CONNECTED");
+    Serial.printf(">>> Phone CONNECTED (clock %s)\n", timeSynced ? "synced" : "not synced");
     // Push current end-switch state immediately so phone doesn't wait for a change
     uint8_t statusByte = keyPresent ? 0x01 : 0x00;
     pStatusCharacteristic->setValue(&statusByte, 1);
@@ -32,7 +32,21 @@ class MyServerCallbacks : public BLEServerCallbacks {
 class WriteCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) override {
     std::string value = pCharacteristic->getValue();
-    if (value.length() > 0 && value[0] == '1') {
+    if (value.length() == 0) return;
+
+    // Clock sync (phone -> board): "TIME:<epochMs>". No RTC on board, so this
+    // is the only source of wall-clock time; millis() is the fallback.
+    if (value.rfind("TIME:", 0) == 0) {
+      int64_t epochMs = strtoll(value.c_str() + 5, nullptr, 10);
+      if (applyPhoneTime(epochMs)) {
+        Serial.printf(">>> Clock synced from phone: %lld\n", (long long)epochMs);
+      } else {
+        Serial.println(">>> Clock sync rejected (implausible timestamp)");
+      }
+      return;
+    }
+
+    if (value[0] == '1') {
       Serial.println(">>> UNLOCK command received!");
       digitalWrite(RELAY_PIN, HIGH);
       delay(1500);              // Hold solenoid open for 1.5s

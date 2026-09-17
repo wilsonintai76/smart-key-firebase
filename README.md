@@ -106,6 +106,15 @@ For a workshop environment, Bluetooth Low Energy provides:
 3.  **Offline resilience** — If the device is offline, events are queued in `localStorage` and automatically flushed when connectivity returns.
 4.  The database rules keep every audit entry append-only (`actorUid` must match the writer).
 
+### Cabinet Clock (no RTC on the board)
+The ESP32 dev board has **no RTC and no backup battery** — it is powered straight from the 12–60 V HDR supply and cannot keep wall-clock time on its own. The phone is the time source:
+
+1.  On every BLE connect (and reconnect) the PWA writes `TIME:<epochMs>` to the write characteristic — see `BluetoothService.syncDeviceTime()` in `services/bluetoothService.ts`.
+2.  The firmware applies it with `settimeofday()`, so `time()` / `currentEpochMs()` are wall-clock from then on.
+3.  Implausible values (before 2020, or a jump of more than a year) are rejected, and the clock starts as *unsynced* after every reboot — offline logs then say `clock not synced` instead of reporting a wrong time.
+
+> The payload is 19 bytes, inside the default 20-byte BLE ATT MTU, so no MTU negotiation is needed. Accuracy is the board's crystal (±1–3 s/day) — re-sync happens on every connect.
+
 ---
 
 ## Tech Stack
