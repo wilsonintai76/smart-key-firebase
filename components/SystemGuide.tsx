@@ -37,6 +37,9 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar space-y-12 pb-6">
           
+          {/* Section: Pin Map & Wiring */}
+          <WiringGuide />
+
           {/* Section: Interface Glossary */}
           <div>
             <h3 className="text-[10px] font-black uppercase text-blue-600 mb-6 tracking-widest flex items-center gap-3">
@@ -170,9 +173,6 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
               </div>
             </div>
           </div>
-
-          {/* Section: Pin Map & Wiring */}
-          <WiringGuide />
 
           {/* Section: Cloud Backend Reference */}
           <div className="p-6 bg-slate-50 border border-slate-200 rounded-4xl mb-6">
