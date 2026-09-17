@@ -12,7 +12,7 @@ const ACTIVE_PINS = [
     pin: 'GPIO5',
     role: 'End switch (NO)',
     signal: 'Digital IN, pull-up',
-    note: 'LOW = key peg seated, HIGH = key taken. Strapping pin — see the boot note.',
+    note: 'One switch covers the whole module of 4 slots: LOW = every peg seated, HIGH = at least one key taken. Strapping pin — see the boot note.',
   },
   {
     pin: 'GPIO2',
@@ -69,7 +69,7 @@ const WIRING_STEPS = [
   {
     icon: 'fa-toggle-on',
     title: '4. End switch (key sensor)',
-    body: 'Switch COM → GND, switch NO → GPIO5. Firmware enables the internal pull-up, so no resistor is needed and the key reads LOW when seated.',
+    body: 'Switch COM → GND, switch NO → GPIO5. Firmware enables the internal pull-up, so no resistor is needed and a seated key reads LOW. This single switch covers all 4 slots of the module — see "One Module = 4 Slots" below.',
   },
   {
     icon: 'fa-lightbulb',
@@ -91,6 +91,34 @@ const COMMANDS = [
   { cmd: 'CYCLE:<slot>', use: 'Maintenance pulse' },
   { cmd: 'FORCE_RETURN:<slot>', use: 'Acknowledged, audited in cloud' },
   { cmd: 'TIME:<epochMs>', use: 'Clock sync on connect' },
+];
+
+/**
+ * One "module" is 4 key slots (the app appends 4 rows per Add Module click), so a
+ * single end switch can only ever describe the whole module. These are the two
+ * ways to wire the pegs, and what each one actually tells the app.
+ */
+const SENSOR_MODES = [
+  {
+    name: 'Row-level',
+    badge: 'Shipped firmware',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    cost: '1 switch · 1 GPIO',
+    tells: 'A key is missing from the module — not which peg.',
+    detail:
+      'Exactly what GPIO5 does today. You can also series-wire all four peg switches into that one pin: the circuit stays closed only while every peg is seated, which still tells you just "this row has a gap".',
+    change: 'No firmware change.',
+  },
+  {
+    name: 'Per-peg',
+    badge: 'Needs code',
+    badgeClass: 'bg-amber-50 text-amber-700 border-amber-100',
+    cost: '4 switches · 4 GPIO',
+    tells: 'Exactly which of the 4 pegs is empty, independently.',
+    detail:
+      'One switch per peg, each on its own pin. The firmware has to read all four pins and report them as a bitmask, and every switch maps to its own KeySlot row.',
+    change: 'Firmware + app change.',
+  },
 ];
 
 const ACCENTS: Record<string, { chip: string; dot: string }> = {
@@ -154,6 +182,50 @@ export const WiringGuide: React.FC = () => (
       <i className="fa-solid fa-bolt absolute -right-10 -bottom-10 text-[160px] text-white/5 rotate-12 pointer-events-none"></i>
     </div>
 
+    {/* One module = 4 slots */}
+    <div className="p-6 bg-slate-50 border border-slate-200 rounded-4xl space-y-5">
+      <div>
+        <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2 mb-2">
+          <i className="fa-solid fa-table-cells"></i> One Module = 4 Slots
+        </h4>
+        <p className="text-[10px] text-slate-500 leading-relaxed">
+          Adding a module in Control Hub creates <strong>4 key slots</strong>, so one row of your pegboard holds
+          <strong> 4 pegs</strong>, not one. The shipped firmware reads a single switch on <code>GPIO5</code>, so the
+          hardware reports the <strong>module</strong> as occupied or empty — the app then works out which peg was
+          taken by looking for the slot you just unlocked, rather than measuring it.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {SENSOR_MODES.map(mode => (
+          <div key={mode.name} className="p-5 bg-white border border-slate-200 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase text-slate-900 tracking-tight">{mode.name}</p>
+              <span className={`text-[8px] font-black uppercase rounded-lg px-2 py-1 border ${mode.badgeClass}`}>
+                {mode.badge}
+              </span>
+            </div>
+            <p className="text-[9px] font-mono font-bold text-blue-600">{mode.cost}</p>
+            <p className="text-[9px] font-bold text-slate-700 leading-relaxed">{mode.tells}</p>
+            <p className="text-[9px] text-slate-500 leading-relaxed">{mode.detail}</p>
+            <p className="text-[9px] font-black uppercase text-slate-400 tracking-tight">{mode.change}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="p-4 bg-white rounded-2xl border border-slate-200">
+        <p className="text-[9px] font-black uppercase text-rose-500 tracking-tight mb-1">
+          Attribution is inferred, not measured
+        </p>
+        <p className="text-[9px] text-slate-500 leading-relaxed">
+          When the switch opens, the app marks the slot sitting in <code>UNLOCKED</code> state as BORROWED; if no slot
+          is unlocked it falls back to the first <code>AVAILABLE</code> one. That is accurate while a single key leaves
+          at a time — take two together and the second is blamed on whichever slot happens to sort first. Only the
+          per-peg wiring removes that guess.
+        </p>
+      </div>
+    </div>
+
     {/* End switch capacity */}
     <div className="p-6 bg-slate-50 border border-slate-200 rounded-4xl space-y-5">
       <div>
@@ -169,9 +241,9 @@ export const WiringGuide: React.FC = () => (
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { value: '1', label: 'In use now', tone: 'text-blue-600' },
-          { value: '8', label: 'No code change', tone: 'text-emerald-600' },
-          { value: '18', label: 'Max extra', tone: 'text-slate-900' },
+          { value: '4', label: 'Slots per module', tone: 'text-blue-600' },
+          { value: '1', label: 'Switch per module', tone: 'text-amber-600' },
+          { value: '18', label: 'Free GPIO pads', tone: 'text-slate-900' },
         ].map(card => (
           <div key={card.label} className="p-4 bg-white rounded-2xl border border-slate-200 text-center">
             <p className={`text-2xl font-black ${card.tone}`}>{card.value}</p>
