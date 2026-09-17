@@ -26,8 +26,7 @@ interface AdminHubProps {
   onActivateUser: (id: string) => void;
   onUnlockUser: (id: string) => void;
   onDeleteUser: (id: string) => void;
-  onUpdateUserCredentials?: (user: UserAccount) => void;
-  onAddUser?: (name: string, email: string, staffId: string, role: 'staff' | 'admin', contact?: string) => Promise<boolean>;
+  onAddUser?: (name: string, email: string, role: 'staff' | 'admin', contact?: string) => Promise<boolean>;
   onAddModule: () => void;
   onDeleteModule: (idx: number) => void;
   onUpdateSlotLabel: (id: number, label: string) => void;
@@ -68,7 +67,6 @@ export const AdminHub: React.FC<AdminHubProps> = ({
   onActivateUser,
   onUnlockUser,
   onDeleteUser,
-  onUpdateUserCredentials,
   onAddUser,
   onAddModule,
   onDeleteModule,
@@ -134,7 +132,6 @@ export const AdminHub: React.FC<AdminHubProps> = ({
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserId, setNewUserId] = useState('');
   const [newUserContact, setNewUserContact] = useState('');
   const [newUserRole, setNewUserRole] = useState<'staff' | 'admin'>('staff');
   const [addUserStatus, setAddUserStatus] = useState('');
@@ -242,7 +239,6 @@ export const AdminHub: React.FC<AdminHubProps> = ({
               'danger',
               () => onDeleteUser(id)
             )}
-            onUpdateUserCredentials={onUpdateUserCredentials}
           />
 
           {/* Add User Section */}
@@ -279,11 +275,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({
                       <option value="admin">Admin</option>
                     </select>
                   </div>
-                  <div><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Staff ID (Optional)</label>
-                    <input type="text" maxLength={12} value={newUserId} onChange={e => setNewUserId(e.target.value)}
-                      placeholder="e.g. 0000" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-mono font-bold outline-none focus:border-emerald-400" />
-                  </div>
-                  <div className="col-span-2"><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Contact (Optional)</label>
+                  <div><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Contact (Optional)</label>
                     <input type="text" value={newUserContact} onChange={e => setNewUserContact(e.target.value)}
                       placeholder="e.g. +60 12-345 6789" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400" />
                   </div>
@@ -299,11 +291,11 @@ export const AdminHub: React.FC<AdminHubProps> = ({
                   }
                   setAddUserStatus('Saving invite...');
                   const ok = await (onAddUser
-                    ? onAddUser(newUserName.trim(), email, newUserId.trim(), newUserRole, newUserContact.trim())
+                    ? onAddUser(newUserName.trim(), email, newUserRole, newUserContact.trim())
                     : Promise.resolve(false));
                   if (ok) {
                     setAddUserStatus('success: invite saved.');
-                    setNewUserName(''); setNewUserEmail(''); setNewUserId(''); setNewUserContact(''); setNewUserRole('staff');
+                    setNewUserName(''); setNewUserEmail(''); setNewUserContact(''); setNewUserRole('staff');
                     setShowAddUser(false);
                   } else {
                     setAddUserStatus('Failed. Admin rights are required to send an invite.');

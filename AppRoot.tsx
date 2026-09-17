@@ -41,7 +41,6 @@ type RemoteUser = {
   email: string;
   avatar?: string;
   role: 'staff' | 'admin';
-  staffId?: string;
   contact?: string;
   status?: 'active' | 'inactive' | 'locked';
 };
@@ -53,7 +52,6 @@ const mapRemoteUser = (u: RemoteUser): UserProfileData => ({
   avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=6366f1&color=fff&size=128`,
   status: u.status || 'active',
   role: u.role,
-  userId: u.staffId || undefined,
   contact: u.contact || '',
 });
 
@@ -331,8 +329,8 @@ export const App: React.FC = () => {
     setView('dashboard');
   };
 
-  const handleAdminAddUser = async (name: string, email: string, staffId: string, role: 'staff' | 'admin', contact?: string): Promise<boolean> => {
-    const ok = await createInvite(email, { name, staffId, role, contact });
+  const handleAdminAddUser = async (name: string, email: string, role: 'staff' | 'admin', contact?: string): Promise<boolean> => {
+    const ok = await createInvite(email, { name, role, contact });
     if (ok) {
       showToast({ title: 'Invite Created', message: `${name} can sign in with ${email} as ${role}.`, type: 'success' });
     } else {
@@ -449,14 +447,6 @@ export const App: React.FC = () => {
         onDeleteUser={id => {
           setRegisteredUsers(prev => prev.filter(u => u.id !== id));
           deleteUserProfile(id).catch(() => {});
-        }}
-        onUpdateUserCredentials={updated => {
-          setRegisteredUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-          updateUserProfile(updated.id, {
-            name: updated.name,
-            staffId: updated.userId || '',
-            contact: updated.contact || '',
-          }).catch(() => {});
         }}
         onAddUser={handleAdminAddUser}
         onAddModule={() => {

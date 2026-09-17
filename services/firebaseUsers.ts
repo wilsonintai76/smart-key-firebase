@@ -2,8 +2,8 @@
  * Realtime Database access for users, invites and the audit trail.
  *
  * Schema:
- *   /users/{uid}                  → name, email, avatar, role, staffId, contact, status, createdAt, lastLogin
- *   /invites/{email-with-commas}  → email, name, staffId, role, contact, createdBy  (admin pre-registration, claimed on first sign-in)
+ *   /users/{uid}                  → name, email, avatar, role, contact, status, createdAt, lastLogin
+ *   /invites/{email-with-commas}  → email, name, role, contact, createdBy  (admin pre-registration, claimed on first sign-in)
  *   /audit/{pushId}               → action, actorUid, actorName, actorEmail, slotLabel, pegState*, ts
  *   /meta/hasAdmin                → first-admin bootstrap flag
  */
@@ -17,7 +17,6 @@ export interface CloudUser {
   email: string;
   avatar?: string;
   role: 'staff' | 'admin';
-  staffId?: string;
   contact?: string;
   status?: 'active' | 'inactive' | 'locked';
 }
@@ -51,7 +50,6 @@ export function subscribeUsers(onUsers: (users: CloudUser[]) => void): () => voi
           email: row.email || '',
           avatar: row.avatar,
           role: row.role === 'admin' ? 'admin' : 'staff',
-          staffId: row.staffId || '',
           contact: row.contact || '',
           status: row.status || 'active',
         };

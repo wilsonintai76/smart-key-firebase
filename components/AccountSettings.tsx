@@ -11,11 +11,10 @@ interface AccountSettingsProps {
 export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser, onShowToast }) => {
   const [name, setName] = useState(user.name);
   const [contact, setContact] = useState(user.contact || '');
-  const [userId, setUserId] = useState(user.userId || '');
 
   const handleSave = async () => {
-    setUser({ ...user, name, contact, userId });
-    const synced = await updateUserProfile(user.id, { name, contact, staffId: userId });
+    setUser({ ...user, name, contact });
+    const synced = await updateUserProfile(user.id, { name, contact });
     onShowToast({
       title: synced ? 'Profile Updated' : 'Saved On This Device',
       message: synced ? 'Your account details have been synced.' : 'Cloud sync failed — changes are stored locally for now.',
@@ -76,24 +75,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser,
               <i className="fa-solid fa-phone absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
             </div>
           </div>
-        </div>
-
-        {/* Staff ID */}
-        <div className="pt-6 border-t border-slate-100">
-           <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Staff ID</h4>
-           <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block ml-1">Staff ID</label>
-                <input 
-                  type="text" 
-                  maxLength={12}
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="0000"
-                  className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-mono font-bold text-slate-800 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none" 
-                />
-              </div>
-           </div>
         </div>
 
         <button 

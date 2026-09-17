@@ -60,7 +60,6 @@ interface MainContentProps {
   onActivateUser: (id: string) => void;
   onUnlockUser: (id: string) => void;
   onDeleteUser: (id: string) => void;
-  onUpdateUserCredentials: (user: UserProfileData) => void;
   onAddModule: () => void;
   onDeleteModule: (idx: number) => void;
   onUpdateSlotLabel: (id: number, label: string) => void;
@@ -121,7 +120,6 @@ export const MainContent: React.FC<MainContentProps> = ({
   onActivateUser,
   onUnlockUser,
   onDeleteUser,
-  onUpdateUserCredentials,
   onAddModule,
   onDeleteModule,
   onUpdateSlotLabel,
@@ -196,7 +194,6 @@ export const MainContent: React.FC<MainContentProps> = ({
           onActivateUser={onActivateUser}
           onUnlockUser={onUnlockUser}
           onDeleteUser={onDeleteUser}
-          onUpdateUserCredentials={onUpdateUserCredentials}
           onAddModule={onAddModule}
           onDeleteModule={onDeleteModule}
           onUpdateSlotLabel={onUpdateSlotLabel}

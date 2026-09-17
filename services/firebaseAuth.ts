@@ -2,8 +2,7 @@
  * Google Sign-In + user profile bootstrap.
  *
  * Auth is Google-only: the Firebase ID token is the app session, and the
- * profile (role, staff ID, contact) lives in Realtime Database at
- * `/users/{uid}`.
+ * profile (role, contact) lives in Realtime Database at `/users/{uid}`.
  *
  * First-run bootstrap rules:
  *  - An admin-created invite at `/invites/{email}` grants the invited role.
@@ -28,14 +27,12 @@ export interface AppUser {
   email: string;
   avatar: string;
   role: 'staff' | 'admin';
-  staffId?: string;
   contact?: string;
   status: 'active' | 'inactive' | 'locked';
 }
 
 export interface Invite {
   name: string;
-  staffId?: string;
   role: 'staff' | 'admin';
   contact?: string;
 }
@@ -150,7 +147,6 @@ export async function ensureUserProfile(fbUser: FirebaseUser): Promise<AppUser> 
   const profile: AppUser & { createdAt: number; lastLogin: number } = {
     ...base,
     name: invite?.name || base.name,
-    staffId: invite?.staffId || '',
     contact: invite?.contact || '',
     role,
     status: 'active',

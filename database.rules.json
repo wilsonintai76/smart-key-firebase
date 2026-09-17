@@ -19,7 +19,6 @@
         "name": { ".validate": "newData.isString() && newData.val().length <= 80" },
         "email": { ".validate": "newData.isString() && newData.val().length <= 120" },
         "avatar": { ".validate": "newData.isString() && newData.val().length <= 500" },
-        "staffId": { ".validate": "newData.isString() && newData.val().length <= 12" },
         "contact": { ".validate": "newData.isString() && newData.val().length <= 40" },
         "status": { ".validate": "newData.val() === 'active' || newData.val() === 'inactive' || newData.val() === 'locked'" },
         "role": {
@@ -38,7 +37,6 @@
         ".validate": "newData.hasChildren(['name', 'email'])",
         "name": { ".validate": "newData.isString() && newData.val().length <= 80" },
         "email": { ".validate": "newData.isString() && newData.val().length <= 120" },
-        "staffId": { ".validate": "newData.isString() && newData.val().length <= 12" },
         "role": { ".validate": "newData.val() === 'staff' || newData.val() === 'admin'" },
         "contact": { ".validate": "newData.isString() && newData.val().length <= 40" },
         "createdAt": { ".validate": "newData.isNumber()" },

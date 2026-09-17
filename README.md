@@ -154,7 +154,7 @@ npm run deploy:hosting  # build + deploy hosting only
 ### Realtime Database schema
 | Path | Purpose |
 |---|---|
-| `/users/{uid}` | Profile: name, email, avatar, role, staffId, contact, status, createdAt, lastLogin |
+| `/users/{uid}` | Profile: name, email, avatar, role, contact, status, createdAt, lastLogin |
 | `/invites/{email}` | Admin pre-registration (dots escaped as commas); claimed on the invitee's first sign-in |
 | `/audit/{pushId}` | Append-only audit trail with actor identity and timestamp |
 | `/meta/hasAdmin` | Bootstrap flag — the first account to sign in becomes admin |

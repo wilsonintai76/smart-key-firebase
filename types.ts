@@ -36,7 +36,6 @@ export interface UserAccount {
   role: 'staff' | 'admin' | '';
   avatar: string;
   contact?: string; // phone/email for contacting user
-  userId?: string;  // Staff ID, synced to RTDB
 }
 
 export interface SystemConfig {

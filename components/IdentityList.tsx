@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { UserAccount } from '../types';
 
 interface IdentityListProps {
@@ -11,7 +11,6 @@ interface IdentityListProps {
   onActivateUser: (id: string) => void;
   onUnlockUser: (id: string) => void;
   onDeleteUser: (id: string) => void;
-  onUpdateUserCredentials?: (user: UserAccount) => void;
 }
 
 export const IdentityList: React.FC<IdentityListProps> = ({
@@ -22,27 +21,8 @@ export const IdentityList: React.FC<IdentityListProps> = ({
   onDeactivateUser,
   onActivateUser,
   onUnlockUser,
-  onDeleteUser,
-  onUpdateUserCredentials
+  onDeleteUser
 }) => {
-  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
-  const [editUserId, setEditUserId] = useState('');
-
-  const handleEditClick = (user: UserAccount) => {
-    setEditingUser(user);
-    setEditUserId(user.userId || '');
-  };
-
-  const handleSaveCredentials = () => {
-    if (editingUser && onUpdateUserCredentials) {
-      onUpdateUserCredentials({
-        ...editingUser,
-        userId: editUserId
-      });
-      setEditingUser(null);
-    }
-  };
-
   return (
     <div className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -102,7 +82,6 @@ export const IdentityList: React.FC<IdentityListProps> = ({
                         <button onClick={() => onApproveUser(u.id)} className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Verify User"><i className="fa-solid fa-check text-[10px]"></i></button>
                       ) : (
                         <>
-                          <button onClick={() => handleEditClick(u)} className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Edit Staff ID"><i className="fa-solid fa-id-card text-[10px]"></i></button>
                           <button onClick={() => onToggleUserRole(u.id)} className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all shadow-sm" title="Toggle Role"><i className="fa-solid fa-user-shield text-[10px]"></i></button>
                           {u.status === 'locked' ? (
                             <button onClick={() => onUnlockUser(u.id)} className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all shadow-sm" title="Manual Unlock"><i className="fa-solid fa-unlock text-[10px]"></i></button>
@@ -132,36 +111,11 @@ export const IdentityList: React.FC<IdentityListProps> = ({
               <img src={u.avatar} className="w-10 h-10 rounded-full shadow-sm border border-slate-100 shrink-0 object-cover" alt="" />
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <p className="text-xs font-black text-slate-900 truncate mb-0.5">{u.name}</p>
-                <div className="flex items-center gap-2 mt-2">
-                   <button onClick={() => handleEditClick(u)} className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">Edit Staff ID</button>
-                </div>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Inline Modal for Editing the Staff ID */}
-      {editingUser && (
-        <div className="absolute inset-0 z-20 bg-slate-900/10 backdrop-blur-sm rounded-[40px] flex items-center justify-center p-4">
-           <div className="bg-white p-6 rounded-3xl shadow-2xl border border-slate-200 w-full max-w-sm animate-fadeIn">
-              <h4 className="text-sm font-black text-slate-900 mb-4">Staff ID</h4>
-              <p className="text-xs text-slate-500 mb-4">Set the staff ID for <strong>{editingUser.name}</strong>.</p>
-              
-              <div className="space-y-3 mb-6">
-                <div>
-                   <label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Staff ID (4-Digit)</label>
-                   <input type="text" maxLength={4} value={editUserId} onChange={e => setEditUserId(e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-slate-50 border p-3 rounded-xl text-sm font-mono font-bold" placeholder="0000" />
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <button onClick={handleSaveCredentials} className="flex-1 bg-amber-500 text-white py-3 rounded-xl text-xs font-black uppercase hover:bg-amber-600">Save</button>
-                <button onClick={() => setEditingUser(null)} className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl text-xs font-black uppercase hover:bg-slate-200">Cancel</button>
-              </div>
-           </div>
-        </div>
-      )}
     </div>
   );
 };
