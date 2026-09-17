@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 const APP_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : 'dev';
 console.log('[SmartKey] v' + APP_VERSION);
@@ -128,6 +128,14 @@ export const App: React.FC = () => {
       if (cloudUsers.length === 0) return;
       const mapped = cloudUsers.map(mapRemoteUser);
       setRegisteredUsers(prev => mergeUsers(prev, mapped));
+      // RTDB is authoritative for role/status: an admin's change must reach the
+      // affected session without a reload (auth only re-fires on sign-in).
+      setUser(prev => {
+        if (!prev) return prev;
+        const self = mapped.find(u => u.id === prev.id);
+        if (!self || (self.role === prev.role && self.status === prev.status)) return prev;
+        return { ...prev, role: self.role, status: self.status };
+      });
     });
 
     // Complete a pending Google redirect sign-in (no-op for popup flows).
@@ -158,6 +166,23 @@ export const App: React.FC = () => {
     });
     return () => { clearTimeout(timeout); unsub(); };
   }, []);
+
+  // Tell the affected session about a live role change and never leave it on
+  // an admin-only view once admin access is gone.
+  const lastRole = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user) { lastRole.current = null; return; }
+    const previous = lastRole.current;
+    lastRole.current = user.role;
+    if (previous && previous !== user.role) {
+      showToast({
+        title: 'Role Updated',
+        message: `Your role is now ${user.role === 'admin' ? 'Administrator' : 'Staff'}.`,
+        type: 'info',
+      });
+    }
+    if (user.role !== 'admin' && uiState.view !== 'dashboard') setView('dashboard');
+  }, [user, uiState.view]);
 
   useEffect(() => { localStorage.setItem('smartkey_config', JSON.stringify(config)); }, [config]);
   useEffect(() => { localStorage.setItem('smartkey_users', JSON.stringify(registeredUsers)); }, [registeredUsers]);
