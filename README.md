@@ -132,7 +132,7 @@ The ESP32 dev board has **no RTC and no backup battery** — it is powered strai
 ## Firebase Setup
 1.  Create a Firebase project and enable **Google** under Authentication → Sign-in method.
 2.  Create the Realtime Database instance (default, `us-central1`).
-3.  Copy the web app config into `.env` / `.env.production`:
+3.  Copy the web app config into `.env`:
 
 ```bash
 VITE_FIREBASE_API_KEY=...
@@ -163,7 +163,6 @@ npm run deploy:hosting  # build + deploy hosting only
 *   **First sign-in ever** → becomes `admin` and claims `/meta/hasAdmin`.
 *   **Invited email** → receives the role stored in `/invites/{email}`.
 *   **Everyone else** → `staff`. Role changes are admin-only and enforced in `database.rules.json`.
-*   An **Emergency Code** can still be set per device in Account Settings; it is stored locally only and used by the deep-offline unlock banner.
 
 ---
 
@@ -197,3 +196,13 @@ There is no native wrapper — the app is a single web bundle served from Fireba
 ### Architecture
 - **Web mode (PWA):** Web Bluetooth for the ESP32 + Google Sign-In (Firebase Auth) for identity + Firebase Realtime Database for shared state, with a `localStorage` offline queue that flushes on reconnect.
 - No Capacitor/native bridge, no local SQLite: all persistence is RTDB plus the offline queue.
+
+### Diagrams
+
+| Diagram | File | Shows |
+|---|---|---|
+| Wiring schematic | [`flowchart LR.mmd`](./flowchart%20LR.mmd) | ESP32 pin map to relay, microswitch and status LED |
+| System architecture | [`flowchart TB.mmd`](./flowchart%20TB.mmd) | High-level flow: hardware ↔ PWA ↔ Firebase |
+| Key workflow | [`sequenceDiagram.mmd`](./sequenceDiagram.mmd) | Key take/return sequence across user, PWA and ESP32 |
+
+Open any file in VS Code and press `Ctrl+Shift+V` (Mermaid preview) to render it.

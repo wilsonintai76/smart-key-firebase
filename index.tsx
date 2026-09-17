@@ -3,49 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { App } from './AppRoot';
 import './index.css';
 
-// Patch console methods to prevent preview environment's logger bridge from crashing on circular structures (like React Fiber nodes)
-const originalConsoleLog = console.log;
-console.log = (...args) => {
-  const safeArgs = args.map(arg => {
-    try {
-      JSON.stringify(arg);
-      return arg;
-    } catch(e) {
-      if (arg instanceof Error) return arg.message;
-      return typeof arg === 'object' ? `[Unserializable Object: ${arg?.constructor?.name}]` : String(arg);
-    }
-  });
-  originalConsoleLog(...safeArgs);
-};
-
-const originalConsoleError = console.error;
-console.error = (...args) => {
-  const safeArgs = args.map(arg => {
-    try {
-      JSON.stringify(arg);
-      return arg;
-    } catch(e) {
-      if (arg instanceof Error) return arg.message;
-      return typeof arg === 'object' ? `[Unserializable Object: ${arg?.constructor?.name}]` : String(arg);
-    }
-  });
-  originalConsoleError(...safeArgs);
-};
-
-const originalConsoleWarn = console.warn;
-console.warn = (...args) => {
-  const safeArgs = args.map(arg => {
-    try {
-      JSON.stringify(arg);
-      return arg;
-    } catch(e) {
-      if (arg instanceof Error) return arg.message;
-      return typeof arg === 'object' ? `[Unserializable Object: ${arg?.constructor?.name}]` : String(arg);
-    }
-  });
-  originalConsoleWarn(...safeArgs);
-};
-
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
   constructor(props: {children: React.ReactNode}) {
     super(props);
@@ -137,11 +94,3 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 );
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (let registration of registrations) {
-      registration.unregister();
-    }
-  });
-}

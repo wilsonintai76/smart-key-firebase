@@ -65,8 +65,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onConnectBluetooth,
   onUpdateSlot
 }) => {
-  const [showOfflineCode, setShowOfflineCode] = React.useState(false);
-
   // Utility to group slots into racks of 4
   const chunkedSlots: KeySlot[][] = [];
   for (let i = 0; i < slots.length; i += 4) {
@@ -79,16 +77,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <EmergencyBanners
         isEmergencySequencing={isEmergencySequencing}
         sequenceProgress={sequenceProgress}
-        isCloudConnected={isCloudConnected}
-        isBluetoothConnected={isBluetoothConnected}
-        user={user}
         isAdminMode={isAdminMode}
         isHardwareTriggerActive={isHardwareTriggerActive}
         isPostEmergency={isPostEmergency}
         isSystemLocked={isSystemLocked}
         onSystemReset={onSystemReset}
-        showOfflineCode={showOfflineCode}
-        setShowOfflineCode={setShowOfflineCode}
       />
 
       <ConnectivityStatus 

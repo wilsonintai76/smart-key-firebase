@@ -1,35 +1,24 @@
 
 import React from 'react';
-import { UserAccount } from '../types';
 
 interface EmergencyBannersProps {
   isEmergencySequencing: boolean;
   sequenceProgress: string;
-  isCloudConnected: boolean;
-  isBluetoothConnected: boolean;
-  user: UserAccount;
   isAdminMode: boolean;
   isHardwareTriggerActive: boolean;
   isPostEmergency: boolean;
   isSystemLocked: boolean;
   onSystemReset?: () => void;
-  showOfflineCode: boolean;
-  setShowOfflineCode: (val: boolean) => void;
 }
 
 export const EmergencyBanners: React.FC<EmergencyBannersProps> = ({
   isEmergencySequencing,
   sequenceProgress,
-  isCloudConnected,
-  isBluetoothConnected,
-  user,
   isAdminMode,
   isHardwareTriggerActive,
   isPostEmergency,
   isSystemLocked,
-  onSystemReset,
-  showOfflineCode,
-  setShowOfflineCode
+  onSystemReset
 }) => {
   return (
     <>
@@ -51,77 +40,6 @@ export const EmergencyBanners: React.FC<EmergencyBannersProps> = ({
               <div className="bg-white/20 px-8 py-2 rounded-2xl font-mono font-black text-4xl backdrop-blur-sm border border-white/30">
                  {sequenceProgress}
               </div>
-           </div>
-        </div>
-      )}
-
-      {/* 4. TOTAL OFFLINE ACCESS (No Network, No BT) */}
-      {!isCloudConnected && !isBluetoothConnected && (
-        <div className="bg-white border-2 border-slate-900 overflow-hidden rounded-[32px] shadow-xl mb-8">
-           <div className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <i className="fa-solid fa-signal-slash text-rose-500"></i>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Deep Offline Protocol</span>
-              </div>
-              <div className="flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                 <span className="text-[9px] font-black uppercase text-emerald-400">ESP32 DevKitC Storage Ready</span>
-              </div>
-           </div>
-           
-           <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-5">
-                 <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-                    <i className="fa-solid fa-keyboard text-2xl text-slate-900"></i>
-                 </div>
-                 <div>
-                    <h3 className="text-lg font-black text-slate-900 leading-none">Manual Keypad Entry</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                      Identity verified via User ID & Local PIN
-                    </p>
-                 </div>
-              </div>
-
-              <div className="flex items-center gap-4 w-full md:w-auto">
-                 <div className="flex-1 md:flex-none flex flex-col items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl min-w-[100px]">
-                    <span className="text-[9px] font-black uppercase text-slate-400">User ID</span>
-                    <span className="text-xl font-mono font-black text-slate-900">{user.userId || '00'}</span>
-                 </div>
-                 <div className="h-10 w-px bg-slate-200 hidden md:block"></div>
-                 <div className="flex-1 md:flex-none flex flex-col items-center gap-2">
-                    <span className="text-[9px] font-black uppercase text-slate-400">Secret PIN Code</span>
-                    <div 
-                      className={`px-8 py-2 bg-slate-900 text-white rounded-xl text-lg font-mono font-black border-2 border-slate-900 cursor-pointer transition-all ${!showOfflineCode && 'blur-md'}`}
-                      onClick={() => setShowOfflineCode(!showOfflineCode)}
-                    >
-                       {user.offlinePin || '----'}
-                    </div>
-                 </div>
-              </div>
-           </div>
-
-           <div className="bg-slate-900 text-white px-6 py-4">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                       <i className="fa-solid fa-info text-[10px] text-blue-400"></i>
-                    </div>
-                    <div>
-                       <p className="text-[11px] font-bold">Standard Hardware Entry:</p>
-                       <p className="text-[10px] text-slate-400 font-mono">CODE: [ID] * [PIN] # (e.g. {user.userId || "01"} * {user.offlinePin || "****"} #)</p>
-                    </div>
-                 </div>
-                 <div className="h-px w-full md:w-px md:h-8 bg-white/10 hidden md:block"></div>
-                 <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 rounded-full border border-amber-500/20">
-                    <i className="fa-solid fa-bolt text-[9px] text-amber-400"></i>
-                    <span className="text-[8px] font-black uppercase text-amber-400">Emergency Override: 00 * [ID] #</span>
-                 </div>
-              </div>
-           </div>
-           
-           <div className="bg-slate-50 px-6 py-2 border-t border-slate-100 flex items-center justify-end gap-2">
-              <i className="fa-solid fa-microchip text-[10px] text-slate-400"></i>
-              <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">ESP32 Flash Sync: Local logging enabled</span>
            </div>
         </div>
       )}

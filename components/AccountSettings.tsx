@@ -12,10 +12,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser,
   const [name, setName] = useState(user.name);
   const [contact, setContact] = useState(user.contact || '');
   const [userId, setUserId] = useState(user.userId || '');
-  const [offlinePin, setOfflinePin] = useState(user.offlinePin || '');
 
   const handleSave = async () => {
-    setUser({ ...user, name, contact, userId, offlinePin });
+    setUser({ ...user, name, contact, userId });
     const synced = await updateUserProfile(user.id, { name, contact, staffId: userId });
     onShowToast({
       title: synced ? 'Profile Updated' : 'Saved On This Device',
@@ -79,10 +78,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser,
           </div>
         </div>
 
-        {/* Staff ID & offline emergency code */}
+        {/* Staff ID */}
         <div className="pt-6 border-t border-slate-100">
-           <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Staff ID & Emergency Access</h4>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Staff ID</h4>
+           <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block ml-1">Staff ID</label>
                 <input 
@@ -93,23 +92,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser,
                   placeholder="0000"
                   className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-mono font-bold text-slate-800 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none" 
                 />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block ml-1">Emergency Code (4-6 Digits)</label>
-                <div className="relative">
-                  <input 
-                    type="password" 
-                    maxLength={6}
-                    value={offlinePin}
-                    onChange={(e) => setOfflinePin(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="••••••"
-                    className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-mono font-bold text-slate-800 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none" 
-                  />
-                  <i className="fa-solid fa-key absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-                </div>
-                <p className="text-[9px] font-medium text-slate-400 ml-1">
-                  Stored on this device only. Used by the deep-offline unlock banner when there is no network.
-                </p>
               </div>
            </div>
         </div>

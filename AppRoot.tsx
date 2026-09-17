@@ -57,13 +57,13 @@ const mapRemoteUser = (u: RemoteUser): UserProfileData => ({
   contact: u.contact || '',
 });
 
-/** Merge RTDB profiles into the local list, keeping device-local fields (emergency PIN). */
+/** Merge RTDB profiles into the local list. */
 const mergeUsers = (current: UserProfileData[], incoming: UserProfileData[]): UserProfileData[] => {
   const merged = [...current];
   for (const user of incoming) {
     const idx = merged.findIndex(u => u.id === user.id);
     if (idx === -1) merged.push(user);
-    else merged[idx] = { ...merged[idx], ...user, offlinePin: merged[idx].offlinePin };
+    else merged[idx] = { ...merged[idx], ...user };
   }
   return merged;
 };
@@ -155,7 +155,7 @@ export const App: React.FC = () => {
       }
       const mapped = mapRemoteUser(authUser);
       setRegisteredUsers(prev => mergeUsers(prev, [mapped]));
-      setUser(prev => (prev && prev.id === mapped.id ? { ...mapped, offlinePin: prev.offlinePin } : mapped));
+      setUser(mapped);
       setAuthResolved(true);
     });
     return () => { clearTimeout(timeout); unsub(); };
@@ -452,7 +452,6 @@ export const App: React.FC = () => {
         }}
         onUpdateUserCredentials={updated => {
           setRegisteredUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-          // `offlinePin` is device-local only; it is never written to RTDB.
           updateUserProfile(updated.id, {
             name: updated.name,
             staffId: updated.userId || '',
