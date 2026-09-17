@@ -11,6 +11,37 @@
 #define MICRO_SWITCH  5
 #define LED_PIN       2
 
+// ===== Relay / Solenoid =====
+// Set to 1 for a low-level-trigger relay module (IN pulled to GND energizes the
+// coil). Single-channel SRD-05VDC-SL-C modules ship in both polarities, so
+// confirm yours on the bench before connecting the solenoid -- the wrong
+// setting holds the lock energized permanently and overheats the coil.
+#define RELAY_ACTIVE_LOW  0
+
+// How long the solenoid stays energized per unlock. Cabinet solenoids are
+// intermittent-duty actuators, so keep this pulse short.
+#define UNLOCK_HOLD_MS    1500
+
+inline void relayEnergize() {
+#if RELAY_ACTIVE_LOW
+  digitalWrite(RELAY_PIN, LOW);
+#else
+  digitalWrite(RELAY_PIN, HIGH);
+#endif
+}
+
+inline void relayRelease() {
+#if RELAY_ACTIVE_LOW
+  digitalWrite(RELAY_PIN, HIGH);
+#else
+  digitalWrite(RELAY_PIN, LOW);
+#endif
+}
+
+// Defined in Cabinet_Manager.h. Declared here because BLE_Callbacks.h, which
+// calls it from the write callback, is included before Cabinet_Manager.h.
+void requestUnlock();
+
 // ===== BLE UUIDs =====
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define WRITE_CHAR_UUID     "beb5483e-36e1-4688-b7f5-ea07361b26a8"

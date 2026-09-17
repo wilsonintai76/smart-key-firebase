@@ -3,12 +3,32 @@
 
 #include "Config.h"
 
+// Non-zero while the solenoid is energized: the millis() deadline at which the
+// relay must be released. The pulse is timed from loop() instead of inside the
+// BLE write callback, because blocking that callback for the full duration
+// starves the BLE stack and can drop the link.
+static uint32_t relayReleaseAt = 0;
+
+void requestUnlock() {
+  relayEnergize();
+  relayReleaseAt = millis() + UNLOCK_HOLD_MS;
+  Serial.printf(">>> UNLOCK: solenoid energized for %d ms\n", UNLOCK_HOLD_MS);
+}
+
+void serviceRelay() {
+  if (relayReleaseAt == 0) return;
+  if ((int32_t)(millis() - relayReleaseAt) < 0) return;  // rollover-safe
+  relayRelease();
+  relayReleaseAt = 0;
+  Serial.println(">>> Lock closed.");
+}
+
 void initHardware() {
   pinMode(RELAY_PIN, OUTPUT);
-  pinMode(MICRO_SWITCH, INPUT_PULLUP);  // LOW = key in place
+  pinMode(MICRO_SWITCH, INPUT_PULLUP);  // LOW = key peg seated (NO contact to GND)
   pinMode(LED_PIN, OUTPUT);
-  
-  digitalWrite(RELAY_PIN, LOW);
+
+  relayRelease();
   digitalWrite(LED_PIN, LOW);
 
   // Read initial state

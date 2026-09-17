@@ -194,35 +194,49 @@ export class BluetoothService {
     if (char.value) this.processStatusValue(char.value);
   }
 
-  // ── Unlock Command (PWA → ESP32) ────────────────────────────────
+  // ── Commands (PWA → ESP32) ──────────────────────────────────────
 
-  /** Send byte 0x01 to trigger the solenoid unlock */
-  public async unlock(): Promise<void> {
+  /**
+   * Write one ASCII command line. The firmware matches the verb before the
+   * first ':' and ignores the rest, so lines must stay within the ~19-byte ATT
+   * payload limit: the write characteristic is write-only, so the default
+   * 23-byte MTU is never negotiated. See the command table in README.md.
+   */
+  private async writeLine(line: string): Promise<void> {
     if (!this.writeCharacteristic) {
       throw new Error('Not connected to KeyCabinet');
     }
     try {
-      await this.writeCharacteristic.writeValue(new Uint8Array([1]));
-      console.log('Unlock command sent to KeyCabinet');
+      await this.writeCharacteristic.writeValue(new TextEncoder().encode(line + '\n'));
     } catch (err: any) {
-      console.error('Unlock failed:', err.message);
+      console.error(`BLE write "${line}" failed:`, err?.message || String(err));
       throw err;
     }
   }
 
-  /** Legacy sendCommand — for backward compatibility with AppRoot.tsx */
-  public async sendCommand(command: string): Promise<void> {
-    if (!this.writeCharacteristic) {
-      throw new Error('Not connected to KeyCabinet');
-    }
-    try {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(command + '\n');
-      await this.writeCharacteristic.writeValue(data);
-    } catch (error: any) {
-      console.error('Failed to send command:', error?.message || String(error));
-      throw error;
-    }
+  /** Energize the solenoid so the key in the given slot can be taken. */
+  public async unlock(slotId?: number): Promise<void> {
+    console.log(`Unlock command sent to KeyCabinet (slot ${slotId ?? 'main'})`);
+    await this.writeLine('UNLOCK');
+  }
+
+  /** Unlock the cabinet's main door latch. */
+  public async unlockDoor(): Promise<void> {
+    await this.writeLine('DOOR');
+  }
+
+  /** Run a maintenance cycle on a slot; the relay pulses once. */
+  public async runMaintenance(slotId?: number): Promise<void> {
+    await this.writeLine(`CYCLE:${slotId ?? 0}`);
+  }
+
+  /**
+   * Force-return override. The board has no policy engine, so there is nothing
+   * to actuate -- the firmware just acknowledges it, and the caller records the
+   * audit entry in Realtime Database.
+   */
+  public async forceReturn(slotId?: number): Promise<void> {
+    await this.writeLine(`FORCE_RETURN:${slotId ?? 0}`);
   }
 
   // ── Clock Sync (PWA → ESP32) ───────────────────────────────────

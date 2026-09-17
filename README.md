@@ -19,50 +19,63 @@ The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Boa
 ## Hardware Wiring Schematic
 
 ```
-                    ESP32 Dev Board
-                   ┌──────────────┐
-                   │              │
-                   │    GPIO4 ────┼─────[1kΩ]────┐
-                   │              │              │
-                   │    GPIO5 ────┼──┬──[10kΩ]───3.3V
-                   │              │  │           │
-                   │     3.3V ────┼──┤           │
-                   │              │  │           │
-                   │     GND  ────┼──┴───────────GND
-                   │              │
-                   │    GPIO2 ────┼─────[220Ω]───▶├──GND
-                   └──────────────┘               LED
+        ESP32 Dev Board                    Relay module              12 V circuit
+   ┌──────────────────────┐          ┌──────────────────────┐
+   │  GPIO4 ──────────────┼──────────┤ IN                   │
+   │  5V ─────────────────┼──────────┤ VCC     COM ─────────┼──── 12 V (HDR-60-12)
+   │  GND ────────────────┼────┬─────┤ GND      NO ─────────┼──── solenoid (+)
+   │  GPIO5 ──────────────┼─┐  │     └──────────────────────┘          │
+   │  GPIO2 ─[220Ω]─▶|────┼─┼──┘                            solenoid (−) ── GND
+   └──────────────────────┘ │
+                            └── NO ──┐ lever microswitch (SPDT)
+       GND ──────────────────── COM ──┘
 ```
 
-### ① Relay / Solenoid Lock (GPIO4)
+### ① Relay Module → Solenoid Lock (GPIO4)
 
-```
-       GPIO4 ───[1kΩ]───┬───────┬─── 12V
-                        │       │
-                        │     ┌─┴─┐
-                   NPN  │     │   │ Solenoid
-                  2N2222│     │   │ Lock
-                        │     └─┬─┘
-                        │       │
-                       GND    ──┴── GND
+The solenoid is switched by the 1-channel relay module, so there is no discrete
+transistor stage — the module already contains the driver and its own coil
+suppression.
 
-  ⚠️ Flyback Diode: 1N4007 across solenoid coil
-     (Cathode → 12V, Anode → Collector)
-     Protects transistor from voltage spike when relay turns OFF.
+       ESP32 5V  ───────────── VCC ┐
+       ESP32 GND ───────────── GND ├─ 1-channel relay module
+       ESP32 GPIO4 ───────────── IN ┘
+
+       12 V (PSU) ──────────── COM ┐
+                                   ├─ relay contacts
+       Solenoid +  ─────────────  NO ┘
+       Solenoid −  ───────────── GND (PSU)
+
+  ⚠️ Feed VCC from 5 V, not 3.3 V: an SRD-05VDC-SL-C coil needs ≈3.75 V to
+     pull in, so on 3.3 V it chatters or never switches.
+  ⚠️ The firmware drives IN active-HIGH. If the module clicks on the wrong
+     edge, set `RELAY_ACTIVE_LOW` to 1 in `firmware/KeyCabinet/Config.h`.
+  ⚠️ Flyback Diode: 1N4007 across the solenoid terminals
+     (Cathode/band → +12V, Anode → GND)
+     The solenoid coil is inductive; without the diode its collapsing field
+     arcs the relay contacts every time the load switches off.
+  ⚠️ Never power the solenoid from the ESP32's 5 V or 3.3 V pin — use the 12 V
+     supply and switch it through the relay contacts.
 ```
 
 ### ② Microswitch — Key Detection (GPIO5)
 
 ```
-       GPIO5 ───┬─────────── SW ──── GND
-                │
-              [10kΩ]
-                │
-               3.3V
+       GPIO5 ────────── NO  ┐
+                            ├── lever microswitch (SPDT, 5 A)
+       GND   ────────── COM ┘
 
-  NC (Normally Closed): key IN → GPIO5 = LOW
-  NO (Normally Open):  key OUT → GPIO5 = HIGH (pull-up)
-  Config: INPUT_PULLUP — internal pull-up active
+  Use NO (Normally Open), wired to GND — no external pull-up resistor needed:
+  the ESP32's internal pull-up is enabled in firmware (`INPUT_PULLUP`).
+
+  Key IN  (lever pressed) → contact closed to GND → GPIO5 = LOW
+  Key OUT (lever released) → contact open          → GPIO5 = HIGH
+
+  ⚠️ Do NOT use the NC contact: pressing the lever *opens* NC, which inverts
+     the reading and reports the key as taken while it is seated.
+  ⚠️ Do not add a 10 kΩ resistor to 3.3 V here — it fights the internal
+     pull-up. If the cable run is long, add 10 kΩ in series at GPIO5 plus
+     100 nF to GND instead, for noise filtering.
 ```
 
 ### ③ Status LED (GPIO2)
@@ -78,16 +91,16 @@ The **SmartKey** is a PWA-controlled IoT key management system. An ESP32 Dev Boa
 
 | Qty | Component | Value | Notes |
 |---|---|---|---|
-| 1 | ESP32 Dev Board | WROOM-32 | Any variant |
-| 1 | NPN Transistor | 2N2222 | Switch relay from 3.3V GPIO |
-| 1 | Flyback Diode | **1N4007** | Across solenoid coil |
-| 1 | Solenoid Lock | 12V DC | Door actuator |
-| 1 | Microswitch | NC type | Key presence sensor |
+| 1 | ESP32 Dev Board | WROOM-32 | On a 38-pin expansion board |
+| 1 | Relay Module | 1 channel, 5 V coil | SRD-05VDC-SL-C. High- or low-level trigger — set `RELAY_ACTIVE_LOW` to match |
+| 1 | Solenoid Lock | 12 V DC, ~0.5–1 A | Intermittent duty; pulsed for 1.5 s per unlock |
+| 1 | Microswitch | Lever, SPDT | Wire the **NO** contact — see ② |
+| 1 | Flyback Diode | **1N4007** | Across the solenoid terminals |
 | 1 | LED | 5mm | Status indicator |
-| 1 | Resistor | 1kΩ | Base current limit |
-| 1 | Resistor | 10kΩ | Pull-up for microswitch |
 | 1 | Resistor | 220Ω | LED current limit |
-| 1 | 12V Power Supply | 2A | External power for solenoid |
+| 1 | DIN Power Supply | Mean Well HDR-60-12 | 12 V / 4.5 A for the solenoid; the ESP32 stays on USB 5 V |
+| — | Hookup wire + ferrules | 0.5–1mm² | Signal runs and the 12 V load circuit |
+| — | Fuse (optional) | 2A slow-blow | In-line on the 12 V solenoid feed |
 
 ---
 
@@ -107,13 +120,44 @@ For a workshop environment, Bluetooth Low Energy provides:
 4.  The database rules keep every audit entry append-only (`actorUid` must match the writer).
 
 ### Cabinet Clock (no RTC on the board)
-The ESP32 dev board has **no RTC and no backup battery** — it is powered straight from the 12–60 V HDR supply and cannot keep wall-clock time on its own. The phone is the time source:
+The ESP32 dev board has **no RTC and no backup battery** — it is powered from the 12 V DIN-rail supply (Mean Well HDR-60-12) and cannot keep wall-clock time on its own. The phone is the time source:
 
 1.  On every BLE connect (and reconnect) the PWA writes `TIME:<epochMs>` to the write characteristic — see `BluetoothService.syncDeviceTime()` in `services/bluetoothService.ts`.
 2.  The firmware applies it with `settimeofday()`, so `time()` / `currentEpochMs()` are wall-clock from then on.
 3.  Implausible values (before 2020, or a jump of more than a year) are rejected, and the clock starts as *unsynced* after every reboot — offline logs then say `clock not synced` instead of reporting a wrong time.
 
 > The payload is 19 bytes, inside the default 20-byte BLE ATT MTU, so no MTU negotiation is needed. Accuracy is the board's crystal (±1–3 s/day) — re-sync happens on every connect.
+
+### BLE Command Protocol
+
+The write characteristic takes short, newline-terminated ASCII lines. The
+firmware matches the verb before the first `:` (case-insensitive) and logs
+anything it does not recognise to Serial.
+
+| Command | Sent by | Firmware action |
+|---|---|---|
+| `TIME:<epochMs>` | `syncDeviceTime()` on every connect | sets the wall clock |
+| `UNLOCK` | `unlock()` — slot unlock / take key | pulses the relay for `UNLOCK_HOLD_MS` |
+| `DOOR` | `unlockDoor()` — main cabinet door | pulses the relay |
+| `CYCLE:<slot>` | `runMaintenance()` | pulses the relay |
+| `FORCE_RETURN:<slot>` | `forceReturn()` | acknowledged only; the audit entry is written to Realtime Database |
+
+> Keep every line within **19 bytes**. The characteristic is write-only, so the
+> default 23-byte ATT MTU is never negotiated and longer writes fail outright.
+> That is also why global policy lives only in Realtime Database and is never
+> pushed to the board — the ESP32 has no policy engine to receive it.
+
+### Adding More End Switches
+
+One switch per free GPIO is possible; the in-app **System Manual → Pin Map &
+Wiring Guide** lists the safe pins and how many are left. Two of the limits are
+in firmware rather than hardware:
+
+* `checkKeyStatus()` reads a single pin into one `keyPresent` flag, and the
+  notify characteristic carries **1 byte** — so up to 8 switches can be reported
+  as a bitmask with no protocol change.
+* Beyond 8, the notification needs a multi-byte payload, and each switch needs
+  its own `KeySlot` row to be audited per key.
 
 ---
 

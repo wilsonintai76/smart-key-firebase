@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { WiringGuide } from './WiringGuide';
 
 interface SystemGuideProps {
   isOpen: boolean;
@@ -100,7 +101,7 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
                    <i className="fa-solid fa-clock"></i> Timekeeping (No RTC On Board)
                  </h3>
                  <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
-                   The ESP32 board is powered directly from the 12&ndash;60 V DC supply and has no RTC and no backup cell, so there is nothing to monitor &mdash; no battery, no voltage telemetry. The phone is the clock: every time the app connects over BLE it pushes the current epoch time to the cabinet.
+                   The ESP32 board is powered from the 12&nbsp;V DIN-rail supply (Mean Well HDR-60-12) and has no RTC and no backup cell, so there is nothing to monitor &mdash; no battery, no voltage telemetry. The phone is the clock: every time the app connects over BLE it pushes the current epoch time to the cabinet.
                  </p>
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
                    <div className="flex justify-between items-center mb-2">
@@ -169,6 +170,9 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
               </div>
             </div>
           </div>
+
+          {/* Section: Pin Map & Wiring */}
+          <WiringGuide />
 
           {/* Section: Cloud Backend Reference */}
           <div className="p-6 bg-slate-50 border border-slate-200 rounded-[32px] mb-6">

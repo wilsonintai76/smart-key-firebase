@@ -358,7 +358,7 @@ export const App: React.FC = () => {
   const initiateUnlock = (id: number) => {
     const slot = slots.find(s => s.id === id);
     if (!slot || !user) return;
-    if (isBluetoothConnected) bluetoothService.sendCommand(JSON.stringify({ action: 'unlock', slotId: id, user: user.name })).catch(() => {});
+    if (isBluetoothConnected) bluetoothService.unlock(id).catch(() => {});
     const updated = slots.map(s => s.id === id ? { ...s, status: KeyStatus.UNLOCKED } : s);
     setSlots(updated);
     addLog(user.name, 'Key Unlocked', slot.label, 'info', user.id, id);
@@ -367,21 +367,21 @@ export const App: React.FC = () => {
   const handleForceReturn = (id: number) => {
     const slot = slots.find(s => s.id === id);
     if (!slot || !user) return;
-    if (isBluetoothConnected) bluetoothService.sendCommand(JSON.stringify({ action: 'force_return', slotId: id, user: user.name })).catch(() => {});
+    if (isBluetoothConnected) bluetoothService.forceReturn(id).catch(() => {});
     setSlots(prev => prev.map(s => s.id === id ? { ...s, status: KeyStatus.AVAILABLE, borrowedBy: undefined, borrowerId: undefined, borrowedAt: undefined } : s));
     addLog(user.name, 'Force Return', slot.label, 'warning', user.id, id);
   };
 
   const handleMaintenanceRequest = (id: number) => {
     setRecentlyMaintained(id);
-    if (isBluetoothConnected) bluetoothService.sendCommand(JSON.stringify({ action: 'maintenance', slotId: id, type: 'cycle_test' })).catch(() => {});
+    if (isBluetoothConnected) bluetoothService.runMaintenance(id).catch(() => {});
     setTimeout(() => setRecentlyMaintained(null), 3000);
     if (user) addLog(user.name, 'Maintenance Cycle', `Slot ${id}`, 'info', user.id, id);
   };
 
   const handleUnlockDoor = () => {
     if (!user) return;
-    if (isBluetoothConnected) bluetoothService.sendCommand(JSON.stringify({ action: 'unlock_door', user: user.name })).catch(() => {});
+    if (isBluetoothConnected) bluetoothService.unlockDoor().catch(() => {});
     addLog(user.name, 'Cabinet Unlock', 'Main Door', 'success', user.id);
     showToast({ title: 'Command Sent', message: 'Unlock signal transmitted.', type: 'info' });
   };
@@ -389,7 +389,8 @@ export const App: React.FC = () => {
   const saveConfig = () => {
     if (!tempConfig) return;
     setConfig(tempConfig);
-    if (isBluetoothConnected) bluetoothService.sendCommand(JSON.stringify({ action: 'config_sync', data: tempConfig })).catch(() => {});
+    // Global policy lives in Realtime Database only: the ESP32 has no policy
+    // engine, and a config payload is far larger than the BLE write limit.
     addLog(user?.name || 'System', 'Config Updated', 'Global Policy', 'info', user?.id);
     showToast({ title: 'Configuration Saved', message: 'System policies updated.', type: 'success' });
   };

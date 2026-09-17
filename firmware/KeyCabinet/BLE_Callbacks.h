@@ -31,13 +31,26 @@ class MyServerCallbacks : public BLEServerCallbacks {
 // ======================================================
 class WriteCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) override {
-    std::string value = pCharacteristic->getValue();
+    String value = pCharacteristic->getValue();
     if (value.length() == 0) return;
+
+    // Legacy single-byte unlock (BluetoothService.unlock()).
+    if (value.length() == 1 && (uint8_t)value[0] == 0x01) {
+      Serial.println(">>> UNLOCK command received (binary)");
+      requestUnlock();
+      return;
+    }
+
+    // Everything else is an ASCII command line, at most ~19 bytes: the write
+    // characteristic is PROPERTY_WRITE, so the default 23-byte ATT MTU is never
+    // negotiated. See the command table in README.md.
+    String line = value;
+    line.trim();
 
     // Clock sync (phone -> board): "TIME:<epochMs>". No RTC on board, so this
     // is the only source of wall-clock time; millis() is the fallback.
-    if (value.rfind("TIME:", 0) == 0) {
-      int64_t epochMs = strtoll(value.c_str() + 5, nullptr, 10);
+    if (line.startsWith("TIME:")) {
+      int64_t epochMs = strtoll(line.c_str() + 5, nullptr, 10);
       if (applyPhoneTime(epochMs)) {
         Serial.printf(">>> Clock synced from phone: %lld\n", (long long)epochMs);
       } else {
@@ -46,12 +59,19 @@ class WriteCallbacks : public BLECharacteristicCallbacks {
       return;
     }
 
-    if (value[0] == '1') {
-      Serial.println(">>> UNLOCK command received!");
-      digitalWrite(RELAY_PIN, HIGH);
-      delay(1500);              // Hold solenoid open for 1.5s
-      digitalWrite(RELAY_PIN, LOW);
-      Serial.println(">>> Lock closed.");
+    String verb = line;
+    int sep = verb.indexOf(':');
+    if (sep >= 0) verb = verb.substring(0, sep);
+    verb.toUpperCase();
+
+    if (verb == "UNLOCK" || verb == "DOOR" || verb == "CYCLE" || verb == "1") {
+      Serial.printf(">>> %s command received\n", verb.c_str());
+      requestUnlock();
+    } else if (verb == "FORCE_RETURN") {
+      // Bookkeeping only -- the PWA records the override in Realtime Database.
+      Serial.println(">>> FORCE_RETURN acknowledged (no actuator action)");
+    } else {
+      Serial.printf(">>> Unknown command ignored: %s\n", line.c_str());
     }
   }
 };

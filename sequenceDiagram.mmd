@@ -10,8 +10,8 @@ sequenceDiagram
     PWA->>PWA: Firebase Auth session
 
     User->>PWA: Tap "Unlock"
-    PWA->>ESP: BLE: unlock command (0x01)
-    ESP->>ESP: Activate relay (1.5s)
+    PWA->>ESP: BLE write: "UNLOCK\n" (ASCII, <=19 bytes)
+    ESP->>ESP: Relay pulse (UNLOCK_HOLD_MS = 1.5s)
     ESP-->>PWA: BLE notify: door opened
 
     User->>ESP: Remove/Return key

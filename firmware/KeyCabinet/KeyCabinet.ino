@@ -34,6 +34,9 @@ void setup() {
 }
 
 void loop() {
+  // Release the solenoid when its unlock pulse expires
+  serviceRelay();
+
   // Check micro-switch status and notify if changed
   checkKeyStatus();
   
