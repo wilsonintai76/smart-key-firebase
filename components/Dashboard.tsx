@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { KeyStatus, KeySlot, LogEntry, SystemConfig, ControllerStatus, UserAccount } from '../types';
+import { KeySlot, LogEntry, SystemConfig, ControllerStatus, UserAccount } from '../types';
 import { EmergencyBanners } from './EmergencyBanners';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { ResourcesPanel } from './ResourcesPanel';
 import { DashboardSidebar } from './DashboardSidebar';
+import { SlotStatusBadge } from './SlotStatusBadge';
 
 interface DashboardProps {
   slots: KeySlot[];
@@ -103,31 +104,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-3">
-          {slots.map(slot => {
-            let badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-            let dotColor = 'bg-emerald-500';
-            let icon = 'fa-check';
-
-            if (slot.status === KeyStatus.BORROWED) {
-              badgeBg = 'bg-blue-50 text-blue-700 border-blue-200';
-              dotColor = 'bg-blue-500';
-              icon = 'fa-user-tag';
-            } else if (slot.status === KeyStatus.UNLOCKED) {
-              badgeBg = 'bg-yellow-50 text-yellow-700 border-yellow-200';
-              dotColor = 'bg-yellow-500 animate-pulse';
-              icon = 'fa-unlock';
-            }
-
-            return (
-              <div key={slot.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-sm ${badgeBg}`}>
-                <div className={`w-2 h-2 rounded-full ${dotColor}`}></div>
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  CH-{String(slot.id).padStart(2, '0')}: {slot.status}
-                </span>
-                <i className={`fa-solid ${icon} text-[10px] ml-1 opacity-70`}></i>
-              </div>
-            );
-          })}
+          {slots.map(slot => (
+            <SlotStatusBadge key={slot.id} slot={slot} />
+          ))}
         </div>
       </div>
 

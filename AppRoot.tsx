@@ -67,6 +67,36 @@ const mergeUsers = (current: UserProfileData[], incoming: UserProfileData[]): Us
   return merged;
 };
 
+/** Key seated: clear the borrower and mark the slot available. */
+const markSlotAvailable = (slot: KeySlot): KeySlot => ({
+  ...slot,
+  status: KeyStatus.AVAILABLE,
+  lastUpdated: new Date().toISOString(),
+  borrowedBy: undefined,
+  borrowerId: undefined,
+  borrowedAt: undefined,
+});
+
+/**
+ * Key taken: mark the slot borrowed. `name`/`id` are the app-issued unlocker
+ * (when known); otherwise the slot's existing borrower is kept. Pass
+ * `keepUsageCount` for snapshot/already-out reports so wear isn't counted twice.
+ */
+const markSlotBorrowed = (
+  slot: KeySlot,
+  name: string | undefined,
+  id: string | undefined,
+  keepUsageCount = false,
+): KeySlot => ({
+  ...slot,
+  status: KeyStatus.BORROWED,
+  lastUpdated: new Date().toISOString(),
+  borrowedBy: name || slot.borrowedBy || 'Unknown',
+  borrowerId: id || slot.borrowerId || 'unknown',
+  borrowedAt: slot.borrowedAt || new Date().toISOString(),
+  usageCount: keepUsageCount ? slot.usageCount : slot.usageCount + 1,
+});
+
 export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<UserProfileData | null>(null);
@@ -264,53 +294,26 @@ export const App: React.FC = () => {
             const availIdx = prev.findIndex(s => s.status === KeyStatus.AVAILABLE);
             if (availIdx === -1) return prev;
             const updated = [...prev];
-            updated[availIdx] = {
-              ...updated[availIdx],
-              status: KeyStatus.BORROWED,
-              borrowedBy: user?.name || 'Unknown',
-              borrowerId: user?.id || 'unknown',
-              borrowedAt: new Date().toISOString(),
-              usageCount: updated[availIdx].usageCount + 1,
-            };
+            updated[availIdx] = markSlotBorrowed(updated[availIdx], user?.name, user?.id);
             return updated;
           }
           const updated = [...prev];
-          updated[targetIdx] = {
-            ...updated[targetIdx],
-            status: KeyStatus.BORROWED,
-            borrowedBy: user?.name || 'Unknown',
-            borrowerId: user?.id || 'unknown',
-            borrowedAt: new Date().toISOString(),
-            usageCount: updated[targetIdx].usageCount + 1,
-          };
-          return updated;
-        } else {
-          // Key physically returned: transition BORROWED → AVAILABLE (or UNLOCKED → AVAILABLE)
-          const targetIdx = prev.findIndex(s => s.status === KeyStatus.BORROWED);
-          if (targetIdx === -1) {
-            // Fallback: if no borrowed slot, reset first UNLOCKED to AVAILABLE
-            const unlockedIdx = prev.findIndex(s => s.status === KeyStatus.UNLOCKED);
-            if (unlockedIdx === -1) return prev;
-            const updated = [...prev];
-            updated[unlockedIdx] = {
-              ...updated[unlockedIdx],
-              status: KeyStatus.AVAILABLE,
-              borrowedBy: undefined,
-              borrowerId: undefined,
-              borrowedAt: undefined,
-            };
-            return updated;
-          }
-          const updated = [...prev];
-          updated[targetIdx] = {
-            ...updated[targetIdx],
-            status: KeyStatus.AVAILABLE,
-            borrowedBy: undefined,
-            borrowerId: undefined,
-            borrowedAt: undefined,
-          };
+          updated[targetIdx] = markSlotBorrowed(updated[targetIdx], user?.name, user?.id);
           return updated;
         }
+        // Key physically returned: transition BORROWED → AVAILABLE (or UNLOCKED → AVAILABLE)
+        const targetIdx = prev.findIndex(s => s.status === KeyStatus.BORROWED);
+        if (targetIdx === -1) {
+          // Fallback: if no borrowed slot, reset first UNLOCKED to AVAILABLE
+          const unlockedIdx = prev.findIndex(s => s.status === KeyStatus.UNLOCKED);
+          if (unlockedIdx === -1) return prev;
+          const updated = [...prev];
+          updated[unlockedIdx] = markSlotAvailable(updated[unlockedIdx]);
+          return updated;
+        }
+        const updated = [...prev];
+        updated[targetIdx] = markSlotAvailable(updated[targetIdx]);
+        return updated;
       });
     });
     return () => unsub();
@@ -345,10 +348,7 @@ export const App: React.FC = () => {
           if (!snapshot) {
             events.push({ action: 'key_return', slotLabel: slot.label, pegStateBefore: slot.status, pegStateAfter: KeyStatus.AVAILABLE });
           }
-          return {
-            ...slot, status: KeyStatus.AVAILABLE, lastUpdated: new Date().toISOString(),
-            borrowedBy: undefined, borrowerId: undefined, borrowedAt: undefined,
-          };
+          return markSlotAvailable(slot);
         }
 
         const wasUnlocked = slot.status === KeyStatus.UNLOCKED;
@@ -357,17 +357,14 @@ export const App: React.FC = () => {
         if (!snapshot) {
           events.push({ action: 'key_take', slotLabel: slot.label, pegStateBefore: slot.status, pegStateAfter: KeyStatus.BORROWED });
         }
-        return {
-          ...slot,
-          status: KeyStatus.BORROWED,
-          lastUpdated: new Date().toISOString(),
-          // Only an unlock the app issued tells us who took it; anything else is
-          // a peg that emptied on its own.
-          borrowedBy: wasUnlocked ? (user?.name || 'Unknown') : (slot.borrowedBy || 'Unknown'),
-          borrowerId: wasUnlocked ? (user?.id || 'unknown') : (slot.borrowerId || 'unknown'),
-          borrowedAt: slot.borrowedAt || new Date().toISOString(),
-          usageCount: alreadyOut || snapshot ? slot.usageCount : slot.usageCount + 1,
-        };
+        // Only an unlock the app issued tells us who took it; anything else is
+        // a peg that emptied on its own.
+        return markSlotBorrowed(
+          slot,
+          wasUnlocked ? user?.name : undefined,
+          wasUnlocked ? user?.id : undefined,
+          alreadyOut || snapshot,
+        );
       });
 
       setSlots(updated);
@@ -470,6 +467,12 @@ export const App: React.FC = () => {
     setSlots(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
+  // Approve, activate and unlock all converge on the same status write.
+  const updateUserStatus = (id: string, status: 'active' | 'inactive') => {
+    setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u));
+    updateUserProfile(id, { status }).catch(() => {});
+  };
+
   // ── Render ──────────────────────────────────────────────────────
   if (isLoading) return <LoadingSpinner />;
 
@@ -507,10 +510,7 @@ export const App: React.FC = () => {
         }}
         onInitiateUnlock={initiateUnlock} onUnlockDoor={handleUnlockDoor}
         handleForceReturn={handleForceReturn} handleMaintenanceRequest={handleMaintenanceRequest} onSaveConfig={saveConfig}
-        onApproveUser={id => {
-          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
-          updateUserProfile(id, { status: 'active' }).catch(() => {});
-        }}
+        onApproveUser={id => updateUserStatus(id, 'active')}
         onToggleUserRole={id => {
           const target = registeredUsers.find(u => u.id === id);
           const nextRole: 'staff' | 'admin' = target?.role === 'admin' ? 'staff' : 'admin';
@@ -519,18 +519,9 @@ export const App: React.FC = () => {
             if (!ok) showToast({ title: 'Role Change Failed', message: 'Only admins can change roles.', type: 'danger' });
           }).catch(() => {});
         }}
-        onDeactivateUser={id => {
-          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'inactive' } : u));
-          updateUserProfile(id, { status: 'inactive' }).catch(() => {});
-        }}
-        onActivateUser={id => {
-          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
-          updateUserProfile(id, { status: 'active' }).catch(() => {});
-        }}
-        onUnlockUser={id => {
-          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
-          updateUserProfile(id, { status: 'active' }).catch(() => {});
-        }}
+        onDeactivateUser={id => updateUserStatus(id, 'inactive')}
+        onActivateUser={id => updateUserStatus(id, 'active')}
+        onUnlockUser={id => updateUserStatus(id, 'active')}
         onDeleteUser={id => {
           setRegisteredUsers(prev => prev.filter(u => u.id !== id));
           deleteUserProfile(id).catch(() => {});

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { WiringGuide } from './WiringGuide';
+import { FeatureCard } from './FeatureCard';
 
 interface SystemGuideProps {
   isOpen: boolean;
@@ -131,46 +132,37 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               
-              <div className="p-5 bg-white border border-slate-100 rounded-[24px]">
-                <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-3">
-                  <i className="fa-solid fa-mobile-screen-button"></i>
-                </div>
-                <h4 className="text-xs font-black text-slate-900 uppercase mb-2">1. App Persistence</h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  <strong>Service Worker</strong> caching allows the dashboard to launch instantly without internet. Install via "Add to Home Screen" for a native app-like experience.
-                </p>
-              </div>
+              <FeatureCard
+                iconClass="fa-solid fa-mobile-screen-button"
+                accent="bg-purple-50 text-purple-600"
+                title="1. App Persistence"
+              >
+                <strong>Service Worker</strong> caching allows the dashboard to launch instantly without internet. Install via "Add to Home Screen" for a native app-like experience.
+              </FeatureCard>
 
-              <div className="p-5 bg-white border border-slate-100 rounded-[24px]">
-                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
-                  <i className="fa-solid fa-fingerprint"></i>
-                </div>
-                <h4 className="text-xs font-black text-slate-900 uppercase mb-2">2. LittleFS Storage</h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  We replaced unreliable SD Cards with <strong>Internal SPI Flash</strong>. 
-                  The <code>whitelist.json</code> is stored on a LittleFS partition, ensuring <strong>Atomic Writes</strong> and zero mechanical vibration failure.
-                </p>
-              </div>
+              <FeatureCard
+                iconClass="fa-solid fa-fingerprint"
+                accent="bg-blue-50 text-blue-600"
+                title="2. LittleFS Storage"
+              >
+                We replaced unreliable SD Cards with <strong>Internal SPI Flash</strong>. The <code>whitelist.json</code> is stored on a LittleFS partition, ensuring <strong>Atomic Writes</strong> and zero mechanical vibration failure.
+              </FeatureCard>
 
-              <div className="p-5 bg-white border border-slate-100 rounded-[24px]">
-                 <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-3">
-                  <i className="fa-brands fa-bluetooth"></i>
-                </div>
-                <h4 className="text-xs font-black text-slate-900 uppercase mb-2">3. BLE Fallback</h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  If internet fails, the dashboard switches to <strong>Local Mode</strong>, connecting directly to the controller via Bluetooth Low Energy (WebBLE).
-                </p>
-              </div>
+              <FeatureCard
+                iconClass="fa-brands fa-bluetooth"
+                accent="bg-amber-50 text-amber-600"
+                title="3. BLE Fallback"
+              >
+                If internet fails, the dashboard switches to <strong>Local Mode</strong>, connecting directly to the controller via Bluetooth Low Energy (WebBLE).
+              </FeatureCard>
 
-              <div className="p-5 bg-white border border-slate-100 rounded-[24px]">
-                 <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-3">
-                  <i className="fa-solid fa-rotate"></i>
-                </div>
-                <h4 className="text-xs font-black text-slate-900 uppercase mb-2">4. Store-and-Forward</h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  When online, audit events stream immediately to <strong>Firebase Realtime Database</strong>. If the device is offline, events are queued in <strong>localStorage</strong> and automatically flushed when connectivity is restored — no data loss.
-                </p>
-              </div>
+              <FeatureCard
+                iconClass="fa-solid fa-rotate"
+                accent="bg-emerald-50 text-emerald-600"
+                title="4. Store-and-Forward"
+              >
+                When online, audit events stream immediately to <strong>Firebase Realtime Database</strong>. If the device is offline, events are queued in <strong>localStorage</strong> and automatically flushed when connectivity is restored — no data loss.
+              </FeatureCard>
             </div>
           </div>
 

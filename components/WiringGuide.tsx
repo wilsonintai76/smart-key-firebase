@@ -1,4 +1,10 @@
 import React from 'react';
+import { PinMapSection } from './wiring/PinMapSection';
+import { WiringStepsSection } from './wiring/WiringStepsSection';
+import { PowerUpChecksSection } from './wiring/PowerUpChecksSection';
+import { ModuleSlotsSection } from './wiring/ModuleSlotsSection';
+import { EndSwitchCapacitySection } from './wiring/EndSwitchCapacitySection';
+import { BleCommandReferenceSection } from './wiring/BleCommandReferenceSection';
 
 /** Pins the shipped firmware uses, in wiring order. */
 const ACTIVE_PINS = [
@@ -144,222 +150,25 @@ export const WiringGuide: React.FC = () => (
     </h3>
 
     {/* Pin map */}
-    <div className="bg-white border border-slate-100 rounded-[28px] overflow-hidden">
-      {ACTIVE_PINS.map((row, i) => (
-        <div
-          key={row.pin}
-          className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 px-5 py-4 ${i > 0 ? 'border-t border-slate-100' : ''}`}
-        >
-          <span className="font-mono text-[11px] font-bold text-white bg-slate-900 rounded-lg px-3 py-1.5 w-fit shrink-0">
-            {row.pin}
-          </span>
-          <div className="md:w-40 shrink-0">
-            <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{row.role}</p>
-            <p className="text-[8px] font-bold text-slate-400 uppercase">{row.signal}</p>
-          </div>
-          <p className="text-[10px] text-slate-500 leading-relaxed">{row.note}</p>
-        </div>
-      ))}
-    </div>
+    <PinMapSection pins={ACTIVE_PINS} />
 
     {/* Wiring steps */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {WIRING_STEPS.map(step => (
-        <div key={step.title} className="p-5 bg-white border border-slate-100 rounded-[24px]">
-          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
-            <i className={`fa-solid ${step.icon}`}></i>
-          </div>
-          <h4 className="text-xs font-black text-slate-900 uppercase mb-2">{step.title}</h4>
-          <p className="text-[10px] text-slate-500 leading-relaxed">{step.body}</p>
-        </div>
-      ))}
-    </div>
+    <WiringStepsSection steps={WIRING_STEPS} />
 
     {/* Polarity / first power-up */}
-    <div className="relative overflow-hidden p-6 bg-slate-900 rounded-4xl text-white">
-      <h4 className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-2 mb-4">
-        <i className="fa-solid fa-triangle-exclamation"></i> First Power-Up Checks
-      </h4>
-      <ol className="space-y-3 relative z-10">
-        {CHECK_STEPS.map((step, i) => (
-          <li key={i} className="flex gap-3">
-            <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-bold shrink-0">
-              {i + 1}
-            </span>
-            <p className="text-[10px] text-slate-300 leading-relaxed">{step}</p>
-          </li>
-        ))}
-      </ol>
-      <i className="fa-solid fa-bolt absolute -right-10 -bottom-10 text-[160px] text-white/5 rotate-12 pointer-events-none"></i>
-    </div>
+    <PowerUpChecksSection steps={CHECK_STEPS} />
 
     {/* One module = 4 slots */}
-    <div className="p-6 bg-slate-50 border border-slate-200 rounded-4xl space-y-5">
-      <div>
-        <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2 mb-2">
-          <i className="fa-solid fa-table-cells"></i> One Module = 4 Slots
-        </h4>
-        <p className="text-[10px] text-slate-500 leading-relaxed">
-          Adding a module in Control Hub creates <strong>4 key slots</strong>, so one row of your pegboard holds
-          <strong> 4 pegs</strong>, not one. The shipped firmware puts one switch on each peg, so the cabinet reports
-          the <strong>individual peg</strong> that moved and the app simply believes it. Only the row-level fallback
-          leaves the app to infer which peg was taken by looking for the slot you just unlocked.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {SENSOR_MODES.map(mode => (
-          <div key={mode.name} className="p-5 bg-white border border-slate-200 rounded-2xl space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase text-slate-900 tracking-tight">{mode.name}</p>
-              <span className={`text-[8px] font-black uppercase rounded-lg px-2 py-1 border ${mode.badgeClass}`}>
-                {mode.badge}
-              </span>
-            </div>
-            <p className="text-[9px] font-mono font-bold text-blue-600">{mode.cost}</p>
-            <p className="text-[9px] font-bold text-slate-700 leading-relaxed">{mode.tells}</p>
-            <p className="text-[9px] text-slate-500 leading-relaxed">{mode.detail}</p>
-            <p className="text-[9px] font-black uppercase text-slate-400 tracking-tight">{mode.change}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="p-4 bg-white rounded-2xl border border-slate-200">
-        <p className="text-[9px] font-black uppercase text-rose-500 tracking-tight mb-1">
-          Row-level mode infers the peg
-        </p>
-        <p className="text-[9px] text-slate-500 leading-relaxed">
-          Only when <code>PEG_SWITCH_COUNT</code> is 0 does the app guess: it marks the slot sitting in
-          <code> UNLOCKED</code> state as BORROWED, and falls back to the first <code>AVAILABLE</code> one if none is.
-          That is accurate while a single key leaves at a time — take two together and the second is blamed on
-          whichever slot happens to sort first. Per-peg wiring removes that guess entirely.
-        </p>
-      </div>
-    </div>
+    <ModuleSlotsSection modes={SENSOR_MODES} />
 
     {/* End switch capacity */}
-    <div className="p-6 bg-slate-50 border border-slate-200 rounded-4xl space-y-5">
-      <div>
-        <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2 mb-2">
-          <i className="fa-solid fa-diagram-project"></i> End Switch Capacity
-        </h4>
-        <p className="text-[10px] text-slate-500 leading-relaxed">
-          A WROOM-32 module has 34 GPIO pads, but flash, USB-serial and boot duties leave <strong>19</strong> usable
-          switch channels once the relay and the LED are assigned. Give each switch its own pin and share a single
-          common ground return — each extra switch costs one signal wire, not two.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { value: '16', label: 'Peg switches max', tone: 'text-blue-600' },
-          { value: '4', label: 'Modules sensed', tone: 'text-emerald-600' },
-          { value: '19', label: 'Switch channels', tone: 'text-slate-900' },
-        ].map(card => (
-          <div key={card.label} className="p-4 bg-white rounded-2xl border border-slate-200 text-center">
-            <p className={`text-2xl font-black ${card.tone}`}>{card.value}</p>
-            <p className="text-[8px] font-black uppercase text-slate-400 tracking-tight mt-1">{card.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100">
-          <p className="text-[9px] font-black uppercase text-slate-900 tracking-tight">
-            Peg switch map <span className="text-slate-400">· PEG_PINS</span>
-          </p>
-          <p className="text-[9px] text-slate-400 mt-1">
-            16 switches fill 4 modules exactly and leave 3 pins over. A fifth module needs 20 switches — more than the
-            19 available — so 4 is the practical ceiling without dropping the status LED.
-          </p>
-        </div>
-        {PEG_MAP.map((row, i) => (
-          <div
-            key={row.module}
-            className={`flex items-center justify-between gap-4 px-4 py-2.5 ${i > 0 ? 'border-t border-slate-100' : ''}`}
-          >
-            <span className="text-[9px] font-black uppercase text-slate-500 tracking-tight">{row.module}</span>
-            <span className="font-mono text-[10px] font-bold text-slate-900">GPIO {row.pins}</span>
-          </div>
-        ))}
-        <div className="px-4 py-3 border-t border-slate-100 bg-amber-50">
-          <p className="text-[9px] text-amber-800/80 leading-relaxed">
-            Peg 16 is <code>GPIO34</code>, which is input-only and has no internal pull-up — fit a 10 kΩ resistor from
-            GPIO34 to 3.3 V for that one switch. The other fifteen need nothing.
-          </p>
-        </div>
-      </div>
-
-      {FREE_PIN_GROUPS.map(group => {
-        const accent = ACCENTS[group.accent];
-        return (
-          <div key={group.kind}>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`w-2 h-2 rounded-full ${accent.dot}`}></span>
-              <p className="text-[9px] font-black uppercase text-slate-500 tracking-tight">{group.kind}</p>
-              <span className="text-[9px] font-bold text-slate-400">• {group.pins.length} pins</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {group.pins.map(pin => (
-                <span
-                  key={pin}
-                  className={`font-mono text-[10px] font-bold rounded-lg px-2.5 py-1 border ${accent.chip}`}
-                >
-                  GPIO{pin}
-                </span>
-              ))}
-            </div>
-            <p className="text-[9px] text-slate-400 leading-relaxed">{group.note}</p>
-          </div>
-        );
-      })}
-
-      <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">
-        <p className="text-[9px] font-black uppercase text-rose-500 tracking-tight flex items-center gap-2">
-          <i className="fa-solid fa-ban"></i> Never use for a switch
-        </p>
-        <p className="text-[9px] text-slate-500 leading-relaxed">
-          GPIO0 (BOOT button), GPIO1/GPIO3 (USB serial), GPIO6–GPIO11 (SPI flash) and GPIO12 (flash-voltage strap —
-          pulling it high at boot can brick the boot sequence). GPIO15 also works, but it is a strapping pin: a switch
-          closed at power-up silences the boot log. GPIO5 is a strapping pin too — held low at boot it only selects an
-          SDIO timing option this project never uses, so a seated key is harmless.
-        </p>
-      </div>
-
-      <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-        <p className="text-[9px] font-black uppercase text-amber-700 tracking-tight mb-1">
-          PEG_SWITCH_COUNT must match your wiring
-        </p>
-        <p className="text-[9px] text-amber-800/80 leading-relaxed">
-          <code>PEG_SWITCH_COUNT</code> is <strong>16</strong> and has to equal the number of switches actually
-          connected. An unwired pin floats high, which the firmware reports as "key removed" — flash 16 with three
-          pegs bare and those slots show <strong>Borrowed</strong> the moment the phone connects. Set it to the real
-          count, or to <strong>0</strong> for the single summary switch.
-        </p>
-        <p className="text-[9px] text-amber-800/80 leading-relaxed mt-2">
-          The pegs travel as a <strong>2-byte</strong> bitmask <code>[0x02][count][mask…]</code>, which fits inside the
-          default 20-byte notification, so no ATT MTU negotiation is involved. The frame carries a 16-bit mask, so 16
-          is the ceiling without widening the payload. Per-peg sensing is also what makes the audit exact: each bit
-          names its own <code>KeySlot</code> row, so the first status after connecting reconciles the slots silently
-          and only later changes are logged as take/return events.
-        </p>
-      </div>
-    </div>
+    <EndSwitchCapacitySection
+      pegMap={PEG_MAP}
+      freePinGroups={FREE_PIN_GROUPS}
+      accents={ACCENTS}
+    />
 
     {/* BLE command reference */}
-    <div className="bg-white border border-slate-100 rounded-[28px] overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100">
-        <p className="text-[10px] font-black uppercase text-slate-900 tracking-tight">BLE Command Reference</p>
-        <p className="text-[9px] text-slate-400 mt-1">
-          ASCII, newline-terminated, 19 bytes maximum — the write characteristic never negotiates a larger MTU.
-        </p>
-      </div>
-      {COMMANDS.map((c, i) => (
-        <div key={c.cmd} className={`flex items-center justify-between gap-4 px-5 py-3 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
-          <span className="font-mono text-[10px] font-bold text-blue-600">{c.cmd}</span>
-          <span className="text-[9px] font-bold text-slate-400 uppercase text-right">{c.use}</span>
-        </div>
-      ))}
-    </div>
+    <BleCommandReferenceSection commands={COMMANDS} />
   </div>
 );
