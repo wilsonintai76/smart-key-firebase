@@ -36,14 +36,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({
   const exportAnalyticsReport = () => {
     const timestamp = new Date().toLocaleString();
     const totalViolations = logs.filter(l => l.action === 'OVERDUE VIOLATION').length;
-    const systemLoad = Math.round((slots.filter(s => s.status === KeyStatus.BORROWED).length / slots.length) * 100);
-    
+
     let report = `SMARTKEY ANALYTICS REPORT\nGenerated: ${timestamp}\nAdministrator: ${user?.name}\n\n--- SYSTEM HEALTH SUMMARY ---\nTotal Resources,${slots.length}\nCurrent System Load,${systemLoad}%\nTotal Recorded Violations,${totalViolations}\n\n--- TOP VIOLATION OFFENDERS ---\nUser Identity,Incident Count\n`;
     const violators = getViolationStats();
     if (violators.length === 0) report += `No violations recorded.,\n`;
     violators.forEach(([name, count]) => { report += `${name},${count}\n`; });
     report += `\n--- RESOURCE UTILIZATION ---\nResource Label,Usage Count,Mechanical Health %\n`;
-    slots.sort((a,b) => b.usageCount - a.usageCount).forEach(s => {
+    [...slots].sort((a,b) => b.usageCount - a.usageCount).forEach(s => {
        const health = Math.max(0, 100 - (s.usageCount / config.maintenanceThreshold * 100));
        report += `${s.label},${s.usageCount},${Math.round(health)}%\n`;
     });
@@ -57,7 +56,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({
     document.body.removeChild(link);
   };
 
-  const systemLoad = Math.round((slots.filter(s => s.status === KeyStatus.BORROWED).length / slots.length) * 100);
+  const borrowedCount = slots.filter(s => s.status === KeyStatus.BORROWED).length;
+  const systemLoad = slots.length > 0 ? Math.round((borrowedCount / slots.length) * 100) : 0;
   const violationCount = logs.filter(l => l.action === 'OVERDUE VIOLATION').length;
 
   return (

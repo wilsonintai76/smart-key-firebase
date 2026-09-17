@@ -24,7 +24,7 @@ export const MaintenanceForecast: React.FC<MaintenanceForecastProps> = ({ slots,
     });
 
     if (overdue.length > 0) {
-      return `CRITICAL: ${overdue.length} node(s) violating borrowing policy. Automated account locking engaged.`;
+      return `CRITICAL: ${overdue.length} node(s) violating borrowing policy. Administrator follow-up required.`;
     }
     if (criticalHealth.length > 0) {
       return `WARNING: Fatigue threshold reached for ${criticalHealth[0].label}. Dispatch technician for inspection.`;
@@ -60,7 +60,7 @@ export const MaintenanceForecast: React.FC<MaintenanceForecastProps> = ({ slots,
               className={`flex items-center gap-5 p-4 rounded-[28px] border transition-all duration-500 ${
                 isCritical 
                 ? 'bg-rose-500/10 border-rose-500/30 ring-1 ring-rose-500/10' 
-                : 'bg-white/5 border-white-[0.03] hover:border-white/10'
+                : 'bg-white/5 border-white/[0.03] hover:border-white/10'
               }`}
             >
               {/* Temporal Anchor (Left) */}
@@ -127,11 +127,11 @@ export const MaintenanceForecast: React.FC<MaintenanceForecastProps> = ({ slots,
              {getSystemAdvice()}
            </p>
          </div>
-         <i className="fa-solid fa-brain absolute -right-4 -bottom-4 text-6xl text-white-[0.02] rotate-12"></i>
+         <i className="fa-solid fa-brain absolute -right-4 -bottom-4 text-6xl text-white/[0.02] rotate-12"></i>
       </div>
       
       {/* Visual Depth Background */}
-      <i className="fa-solid fa-chart-line absolute -bottom-16 -left-16 text-[220px] text-white-[0.02] pointer-events-none rotate-12"></i>
+      <i className="fa-solid fa-chart-line absolute -bottom-16 -left-16 text-[220px] text-white/[0.02] pointer-events-none rotate-12"></i>
     </div>
   );
 };

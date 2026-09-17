@@ -2,6 +2,7 @@
 import React from 'react';
 import { UserAccount as UserProfileData, BluetoothStatus } from '../types';
 import { UserProfile } from './UserProfile';
+import { CURRENT_VERSION } from '../hooks/useVersionCheck';
 
 interface HeaderProps {
   networkMode: 'cloud' | 'local';
@@ -43,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
                   SmartKey
                 </h1>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[7px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">v2.5.3</span>
+                  <span className="text-[7px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">v{CURRENT_VERSION}</span>
                   <div className={`flex items-center gap-1.5 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border transition-all shrink-0 ${
                     bluetoothStatus === 'connected' ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
                     : bluetoothStatus === 'scanning' || bluetoothStatus === 'connecting' ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm'
