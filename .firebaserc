@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "smart-key-firebase"
+  },
+  "targets": {}
+}

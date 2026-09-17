@@ -2,7 +2,7 @@
 # SecureKey v3 — Key Management System
 
 ## System Overview
-The **SecureKey** is a PWA-controlled IoT key management system. An ESP32 Dev Board with a relay (solenoid lock) and microswitch detects key presence. The React PWA connects directly via Web Bluetooth (BLE), authenticates users with fingerprint/Face ID (WebAuthn), and logs all key events to Cloudflare D1 (SQLite) via the Hono API.
+The **SecureKey** is a PWA-controlled IoT key management system. An ESP32 Dev Board with a relay (solenoid lock) and microswitch detects key presence. The React PWA connects directly via Web Bluetooth (BLE), authenticates users with Google Sign-In (Firebase Auth), and logs all key events to Firebase Realtime Database.
 
 ---
 
@@ -10,7 +10,7 @@ The **SecureKey** is a PWA-controlled IoT key management system. An ESP32 Dev Bo
 1.  **Flash the ESP32** — Open `firmware/KeyCabinet/KeyCabinet.ino` in Arduino IDE and upload to your ESP32 Dev Board.
 2.  **Start the PWA** — `npm install && npm run dev`
 3.  **Connect** — Open the PWA on Chrome/Edge (Android or desktop), tap "Connect to Cabinet", pair with the "KeyCabinet" BLE device.
-4.  **Login** — Use fingerprint/Face ID or a local 4-Digit User ID + PIN.
+4.  **Login** — Sign in with Google. The first account to sign in becomes the admin; everyone else needs an invite created by an admin.
 
 > **Hardware pins:** Relay → GPIO4, Microswitch → GPIO5, LED → GPIO2
 
@@ -98,25 +98,63 @@ The system communicates directly with the ESP32 Dev Board via Bluetooth Low Ener
 For a workshop environment, Bluetooth Low Energy provides:
 *   **Direct peer-to-peer** — No router, no internet, no cloud dependency for core operations.
 *   **Low latency** — Unlock commands arrive in milliseconds.
-*   **Cloud-backed** — All logs are stored in Cloudflare D1 (SQLite) via the Hono API.
+*   **Cloud-backed** — All logs are mirrored to Firebase Realtime Database.
 
 ### Audit Logging
 1.  **Key events** (TAKEN/RETURNED) are detected by the ESP32 microswitch and pushed via BLE notification.
-2.  **Cloud audit** — The PWA posts events directly to the Cloudflare Hono API.
+2.  **Cloud audit** — The PWA writes the event to `/audit` in Realtime Database as the signed-in Google user.
 3.  **Offline resilience** — If the device is offline, events are queued in `localStorage` and automatically flushed when connectivity returns.
-4.  The Cloudflare Worker stores them in D1 (SQLite) for a permanent audit trail.
+4.  The database rules keep every audit entry append-only (`actorUid` must match the writer).
 
 ---
 
 ## Tech Stack
 *   **Edge Hardware:** ESP32 Dev Board (WROOM-32) with BLE + relay + microswitch.
 *   **Firmware:** Arduino (ESP32 BLE Arduino library) — see `firmware/KeyCabinet/`.
-*   **Backend:** Cloudflare Workers (Hono) + D1 + KV.
-*   **Auth:** WebAuthn (fingerprint/Face ID) + local PIN fallback.
+*   **Hosting:** Firebase Hosting (`firebase deploy --only hosting,database`).
+*   **Auth:** Google Sign-In via Firebase Authentication (no PIN or WebAuthn credentials).
 *   **Frontend:** React 18, TypeScript, Tailwind CSS, Vite PWA.
-*   **Database:** Cloudflare D1 (SQLite).
+*   **Database:** Firebase Realtime Database (`database.rules.json` holds the security rules).
 *   **Offline Queue:** `localStorage` (lightweight, no dependencies).
-*   **Architecture:** Cloud-native with BLE + REST API.
+*   **Architecture:** Cloud-native with BLE + Firebase SDK.
+
+---
+
+## Firebase Setup
+1.  Create a Firebase project and enable **Google** under Authentication → Sign-in method.
+2.  Create the Realtime Database instance (default, `us-central1`).
+3.  Copy the web app config into `.env` / `.env.production`:
+
+```bash
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=<project>.firebaseapp.com
+VITE_FIREBASE_DATABASE_URL=https://<project>-default-rtdb.firebaseio.com
+VITE_FIREBASE_PROJECT_ID=<project>
+VITE_FIREBASE_STORAGE_BUCKET=<project>.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+4.  Deploy hosting + rules:
+
+```bash
+npm run deploy          # bump version, build, deploy hosting + database
+npm run deploy:hosting  # build + deploy hosting only
+```
+
+### Realtime Database schema
+| Path | Purpose |
+|---|---|
+| `/users/{uid}` | Profile: name, email, avatar, role, staffId, contact, status, createdAt, lastLogin |
+| `/invites/{email}` | Admin pre-registration (dots escaped as commas); claimed on the invitee's first sign-in |
+| `/audit/{pushId}` | Append-only audit trail with actor identity and timestamp |
+| `/meta/hasAdmin` | Bootstrap flag — the first account to sign in becomes admin |
+
+### Roles
+*   **First sign-in ever** → becomes `admin` and claims `/meta/hasAdmin`.
+*   **Invited email** → receives the role stored in `/invites/{email}`.
+*   **Everyone else** → `staff`. Role changes are admin-only and enforced in `database.rules.json`.
+*   An **Emergency Code** can still be set per device in Account Settings; it is stored locally only and used by the deep-offline unlock banner.
 
 ---
 
@@ -157,6 +195,6 @@ npm run open:ios       # Xcode
 | Local DB | ✅ SQLite | ✅ SQLite | `@capacitor-community/sqlite` |
 
 ### Architecture
-- **Web mode (PWA):** Uses Web Bluetooth + WebAuthn + localStorage/offline queue
+- **Web mode (PWA):** Uses Web Bluetooth + Google Sign-In (Firebase) + localStorage/offline queue
 - **Native mode:** Uses Capacitor BLE + native biometrics + on-device SQLite
 - Auto-detected at runtime via `Capacitor.isNativePlatform()`

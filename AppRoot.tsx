@@ -10,8 +10,9 @@ import {
 import { INITIAL_SLOTS, DEFAULT_SYSTEM_CONFIG } from './constants';
 import { bluetoothService } from './services/bluetoothService';
 import { queueAuditEvent, flushAuditQueue, getQueueLength } from './services/offlineQueue';
-import { getSessionToken, clearSessionToken, recordAuditEvent, verifySession, logoutSession } from './services/webauthnService';
-import { fetchCloudUsers, verifyCloudPin, deleteCloudUser, registerCloudUser } from './services/webauthnService';
+import { consumeGoogleRedirectResult, signInWithGoogle, signOutUser, subscribeAuthUser } from './services/firebaseAuth';
+import { createInvite, deleteUserProfile, subscribeUsers, updateUserProfile, writeAuditEvent } from './services/firebaseUsers';
+import { isFirebaseConfigured } from './services/firebase';
 
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
@@ -33,10 +34,44 @@ interface Toast {
   action?: () => void;
 }
 
+/** Shape shared by the RTDB profile and the auth profile. */
+type RemoteUser = {
+  uid: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: 'staff' | 'admin';
+  staffId?: string;
+  contact?: string;
+  status?: 'active' | 'inactive' | 'locked';
+};
+
+const mapRemoteUser = (u: RemoteUser): UserProfileData => ({
+  id: u.uid,
+  name: u.name,
+  email: u.email || '',
+  avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=6366f1&color=fff&size=128`,
+  status: u.status || 'active',
+  role: u.role,
+  userId: u.staffId || undefined,
+  contact: u.contact || '',
+});
+
+/** Merge RTDB profiles into the local list, keeping device-local fields (emergency PIN). */
+const mergeUsers = (current: UserProfileData[], incoming: UserProfileData[]): UserProfileData[] => {
+  const merged = [...current];
+  for (const user of incoming) {
+    const idx = merged.findIndex(u => u.id === user.id);
+    if (idx === -1) merged.push(user);
+    else merged[idx] = { ...merged[idx], ...user, offlinePin: merged[idx].offlinePin };
+  }
+  return merged;
+};
+
 export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<UserProfileData | null>(null);
-  const [sessionToken, setSessionToken] = useState<string | null>(getSessionToken());
+  const [authResolved, setAuthResolved] = useState(!isFirebaseConfigured);
   const [registeredUsers, setRegisteredUsers] = useState<UserProfileData[]>([]);
   const [config, setConfig] = useState<SystemConfig>(DEFAULT_SYSTEM_CONFIG);
 
@@ -90,55 +125,40 @@ export const App: React.FC = () => {
     const storedSlots = localStorage.getItem('smartkey_slots');
     if (storedSlots) { try { setSlots(JSON.parse(storedSlots)); } catch {} }
 
-    // Fetch cloud users from D1 and merge with localStorage (cross-device sync)
-    if (navigator.onLine) {
-      fetchCloudUsers().then(cloudUsers => {
-        if (cloudUsers.length > 0) {
-          const localUsers: UserProfileData[] = storedUsers ? JSON.parse(storedUsers) : [];
-          const merged = [...localUsers];
-          for (const cu of cloudUsers) {
-            if (!merged.find(u => u.id === cu.id)) {
-              merged.push({
-                id: cu.id,
-                name: cu.name,
-                email: '',
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(cu.name)}&background=6366f1&color=fff&size=128`,
-                status: 'active' as const,
-                role: (cu as any).role === 'admin' ? 'admin' as const : 'staff' as const,
-                userId: cu.staffId,
-                contact: (cu as any).contact || '',
-                offlinePin: '', // PIN stays server-side, verified via API
-              });
-            }
-          }
-          setRegisteredUsers(merged);
-          localStorage.setItem('smartkey_users', JSON.stringify(merged));
-        }
-      }).catch(() => {});
-    }
+    // Live cross-device sync: every RTDB profile is merged into the local list.
+    const unsubscribe = subscribeUsers(cloudUsers => {
+      if (cloudUsers.length === 0) return;
+      const mapped = cloudUsers.map(mapRemoteUser);
+      setRegisteredUsers(prev => mergeUsers(prev, mapped));
+    });
 
-    // Try to recover a previous WebAuthn session
-    const token = getSessionToken();
-    if (token) {
-      setSessionToken(token);
-      // Attempt token verification
-      verifySession().then(result => {
-          if (result && result.user) {
-            const recoveredUser: UserProfileData = {
-              id: result.user.id,
-              name: result.user.displayName || result.user.username,
-              email: '',
-              avatar: '',
-              status: 'active',
-              role: 'staff',
-            };
-            setUser(recoveredUser);
-            showToast({ title: 'Session Restored', message: `Welcome back, ${recoveredUser.name}`, type: 'info' });
-          }
-        }).catch(() => {});
-    }
+    // Complete a pending Google redirect sign-in (no-op for popup flows).
+    consumeGoogleRedirectResult().catch(() => {});
 
     setIsLoading(false);
+    return unsubscribe;
+  }, []);
+
+  // ── Google auth subscription → session user ─────────────────────
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    let settled = false;
+    // Don't hang the splash screen if RTDB is unreachable.
+    const timeout = setTimeout(() => { if (!settled) setAuthResolved(true); }, 5000);
+    const unsub = subscribeAuthUser(authUser => {
+      settled = true;
+      clearTimeout(timeout);
+      if (!authUser) {
+        setUser(null);
+        setAuthResolved(true);
+        return;
+      }
+      const mapped = mapRemoteUser(authUser);
+      setRegisteredUsers(prev => mergeUsers(prev, [mapped]));
+      setUser(prev => (prev && prev.id === mapped.id ? { ...mapped, offlinePin: prev.offlinePin } : mapped));
+      setAuthResolved(true);
+    });
+    return () => { clearTimeout(timeout); unsub(); };
   }, []);
 
   useEffect(() => { localStorage.setItem('smartkey_config', JSON.stringify(config)); }, [config]);
@@ -159,24 +179,14 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      // Flush any queued audit events to D1
-      flushAuditQueue(async (event) => {
-        const token = getSessionToken();
-        if (!token) return false;
-        try {
-          const res = await fetch('/api/audit/event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-              action: event.action,
-              slotLabel: event.slotLabel,
-              pegStateBefore: event.pegStateBefore,
-              pegStateAfter: event.pegStateAfter,
-            }),
-          });
-          return res.ok;
-        } catch { return false; }
-      }).then(({ flushed }) => {
+      // Flush any queued audit events to Realtime Database
+      flushAuditQueue(async (event) => writeAuditEvent({
+        action: event.action,
+        slotLabel: event.slotLabel,
+        pegStateBefore: event.pegStateBefore,
+        pegStateAfter: event.pegStateAfter,
+        timestamp: event.timestamp,
+      })).then(({ flushed }) => {
         if (flushed > 0) showToast({ title: 'Queue Flushed', message: `${flushed} offline event(s) synced to cloud.`, type: 'success' });
       }).catch(() => {});
     };
@@ -201,19 +211,17 @@ export const App: React.FC = () => {
     return () => unsub();
   }, []);
 
-  // ── BLE Key Presence → Slot State + Cloud Audit (D1 SQLite) ──
+  // ── BLE Key Presence → Slot State + Cloud Audit (Realtime Database) ──
   useEffect(() => {
     const unsub = bluetoothService.onKeyPresence(keyPresent => {
       const action = keyPresent ? 'cabinet_close' : 'cabinet_open';
       const pegBefore = keyPresent ? 'BORROWED' : 'AVAILABLE';
       const pegAfter = keyPresent ? 'AVAILABLE' : 'BORROWED';
 
-      if (sessionToken && user?.id) {
+      if (user?.id) {
         if (navigator.onLine) {
-          // Online → send directly to D1
-          recordAuditEvent(action, 'Cabinet', pegBefore, pegAfter).catch(() => {});
+          writeAuditEvent({ action, slotLabel: 'Cabinet', pegStateBefore: pegBefore, pegStateAfter: pegAfter }).catch(() => {});
         } else {
-          // Offline → queue for later delivery
           queueAuditEvent({ action, slotLabel: 'Cabinet', pegStateBefore: pegBefore, pegStateAfter: pegAfter });
         }
       }
@@ -296,106 +304,39 @@ export const App: React.FC = () => {
     setLogs(prev => [newLog, ...prev]);
   };
 
-  const handleLocalLogin = async (userId: string, pin: string): Promise<boolean> => {
-    // Source of truth: D1 (cloud) first
-    if (navigator.onLine) {
-      const result = await verifyCloudPin(userId, pin);
-      if (result?.user) {
-        const cloudUser: UserProfileData = {
-          id: result.user.id,
-          name: result.user.name,
-          email: '',
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(result.user.name)}&background=6366f1&color=fff&size=128`,
-          status: 'active',
-          role: (result.user as any).role === 'admin' ? 'admin' : 'staff',
-          userId: result.user.staffId,
-          offlinePin: pin, // cache PIN locally for offline use
-        };
-        setRegisteredUsers(prev => {
-          const updated = prev.filter(u => u.id !== cloudUser.id);
-          return [...updated, cloudUser];
+  const handleGoogleLogin = async () => {
+    updateUI({ isAuthenticating: true });
+    try {
+      await signInWithGoogle();
+      // The auth subscription effect takes over once the popup resolves.
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        showToast({
+          title: 'Sign-In Failed',
+          message: code === 'auth/operation-not-allowed'
+            ? 'Google Sign-In is not enabled for this Firebase project yet.'
+            : err?.message || 'Google Sign-In failed. Check your connection and try again.',
+          type: 'danger',
         });
-        setTimeout(() => {
-          localStorage.setItem('smartkey_users', JSON.stringify(
-            [...registeredUsers.filter(u => u.id !== cloudUser.id), cloudUser]
-          ));
-        }, 0);
-        completeLocalLogin(cloudUser);
-        return true;
       }
+    } finally {
+      updateUI({ isAuthenticating: false });
     }
-
-    // Offline fallback: verify against cached users
-    const found = registeredUsers.find(u => (u.userId === userId || u.id === userId) && u.offlinePin === pin);
-    if (found) {
-      completeLocalLogin(found);
-      return true;
-    }
-
-    showToast({ title: 'Access Denied', message: 'Invalid credentials. Check Staff ID and PIN.', type: 'danger' });
-    return false;
-  };
-
-  const completeLocalLogin = (found: UserProfileData) => {
-    setTimeout(() => {
-      setUser(found);
-      addLog(found.name, 'PIN Login', 'System', 'success', found.id);
-      showToast({ title: 'Access Granted', message: `Welcome, ${found.name}`, type: 'success' });
-      if (!isBluetoothConnected) bluetoothService.connect().catch(e => showGlobalError(e.message));
-    }, 500);
-  };
-
-  const handleWebAuthnLogin = (userId: string, userName: string, token?: string) => {
-    if (token) setSessionToken(token);
-    const found = registeredUsers.find(u => u.id === userId);
-    const u = found || { id: userId, name: userName, email: '', avatar: '', status: 'active' as const, role: 'staff' as const };
-    setUser(u);
-    addLog(u.name, 'Biometric Login', 'System', 'success', u.id);
-    showToast({ title: 'Biometric Verified', message: `Welcome, ${u.name}`, type: 'success' });
-    if (!isBluetoothConnected) bluetoothService.connect().catch(e => showGlobalError(e.message));
-  };
-
-  const handleWebAuthnRegister = (userId: string, userName: string) => {
-    // After biometric enrollment, create a local user record for the PWA
-    const newUser: UserProfileData = {
-      id: userId,
-      name: userName,
-      email: '',
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=7c3aed&color=fff&size=128`,
-      status: 'active',
-      role: 'staff',
-    };
-    setRegisteredUsers(prev => {
-      if (prev.find(u => u.id === userId)) return prev;
-      return [...prev, newUser];
-    });
-    addLog(userName, 'Biometric Enrollment', 'System', 'success', userId);
-    showToast({ title: 'Biometric Enrolled', message: `${userName} can now sign in with fingerprint/face.`, type: 'success' });
   };
 
   const handleLogout = () => {
-    // Revoke cloud session
-    if (sessionToken && navigator.onLine) {
-      logoutSession().catch(() => {});
-    }
-    clearSessionToken();
-    setSessionToken(null);
+    signOutUser().catch(() => {});
     setUser(null);
     setView('dashboard');
   };
 
-  const handleSelfRegister = async (name: string, staffId: string, pin: string): Promise<boolean> => {
-    const ok = await registerCloudUser(name, staffId, pin);
+  const handleAdminAddUser = async (name: string, email: string, staffId: string, role: 'staff' | 'admin', contact?: string): Promise<boolean> => {
+    const ok = await createInvite(email, { name, staffId, role, contact });
     if (ok) {
-      showToast({ title: 'Account Created', message: `${name} registered.`, type: 'success' });
-    }
-    return ok;
-  };
-
-  const handleAdminAddUser = async (name: string, staffId: string, pin: string, role: 'staff' | 'admin'): Promise<boolean> => {
-    const ok = await registerCloudUser(name, staffId, pin);
-    if (ok) {
-      showToast({ title: 'User Added', message: `${name} added as ${role}.`, type: 'success' });
+      showToast({ title: 'Invite Created', message: `${name} can sign in with ${email} as ${role}.`, type: 'success' });
+    } else {
+      showToast({ title: 'Invite Failed', message: 'Could not save the invite. Admin rights are required.', type: 'danger' });
     }
     return ok;
   };
@@ -422,7 +363,7 @@ export const App: React.FC = () => {
     setRecentlyMaintained(id);
     if (isBluetoothConnected) bluetoothService.sendCommand(JSON.stringify({ action: 'maintenance', slotId: id, type: 'cycle_test' })).catch(() => {});
     setTimeout(() => setRecentlyMaintained(null), 3000);
-    if (user) addLog(user.name, 'Maintenance Cycle', Slot , 'info', user.id, id);
+    if (user) addLog(user.name, 'Maintenance Cycle', `Slot ${id}`, 'info', user.id, id);
   };
 
   const handleUnlockDoor = () => {
@@ -450,10 +391,8 @@ export const App: React.FC = () => {
   if (!user) {
     return (<>
       <ToastContainer toast={uiState.toast} globalError={uiState.globalError} onClearToast={clearToast} onClearGlobalError={clearGlobalError} />
-      <Login onLogin={() => {}} onPinLogin={handleLocalLogin} onWebAuthnLogin={handleWebAuthnLogin}
-        onWebAuthnRegister={handleWebAuthnRegister} onSelfRegister={handleSelfRegister}
-        isAuthenticating={uiState.isAuthenticating} systemID={config.systemID} bluetoothStatus={bluetoothStatus}
-        biometricEnabled={config.biometricEnabled} />
+      <Login onGoogleLogin={handleGoogleLogin} isAuthenticating={uiState.isAuthenticating}
+        systemID={config.systemID} bluetoothStatus={bluetoothStatus} />
     </>);
   }
 
@@ -483,16 +422,43 @@ export const App: React.FC = () => {
         }}
         onInitiateUnlock={initiateUnlock} onUnlockDoor={handleUnlockDoor}
         handleForceReturn={handleForceReturn} handleMaintenanceRequest={handleMaintenanceRequest} onSaveConfig={saveConfig}
-        onApproveUser={id => setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u))}
-        onToggleUserRole={id => setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, role: u.role === 'admin' ? 'staff' : 'admin' } : u))}
-        onDeactivateUser={id => setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'inactive' } : u))}
-        onActivateUser={id => setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u))}
-        onUnlockUser={id => setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u))}
+        onApproveUser={id => {
+          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
+          updateUserProfile(id, { status: 'active' }).catch(() => {});
+        }}
+        onToggleUserRole={id => {
+          const target = registeredUsers.find(u => u.id === id);
+          const nextRole: 'staff' | 'admin' = target?.role === 'admin' ? 'staff' : 'admin';
+          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, role: nextRole } : u));
+          updateUserProfile(id, { role: nextRole }).then(ok => {
+            if (!ok) showToast({ title: 'Role Change Failed', message: 'Only admins can change roles.', type: 'danger' });
+          }).catch(() => {});
+        }}
+        onDeactivateUser={id => {
+          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'inactive' } : u));
+          updateUserProfile(id, { status: 'inactive' }).catch(() => {});
+        }}
+        onActivateUser={id => {
+          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
+          updateUserProfile(id, { status: 'active' }).catch(() => {});
+        }}
+        onUnlockUser={id => {
+          setRegisteredUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
+          updateUserProfile(id, { status: 'active' }).catch(() => {});
+        }}
         onDeleteUser={id => {
           setRegisteredUsers(prev => prev.filter(u => u.id !== id));
-          deleteCloudUser(id).catch(() => {});
+          deleteUserProfile(id).catch(() => {});
         }}
-        onUpdateUserCredentials={updated => setRegisteredUsers(prev => prev.map(u => u.id === updated.id ? updated : u))}
+        onUpdateUserCredentials={updated => {
+          setRegisteredUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+          // `offlinePin` is device-local only; it is never written to RTDB.
+          updateUserProfile(updated.id, {
+            name: updated.name,
+            staffId: updated.userId || '',
+            contact: updated.contact || '',
+          }).catch(() => {});
+        }}
         onAddUser={handleAdminAddUser}
         onAddModule={() => {
           setIsAddingModule(false);

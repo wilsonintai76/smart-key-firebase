@@ -1,0 +1,66 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "meta": {
+      "hasAdmin": {
+        ".read": "auth != null",
+        ".validate": "newData.isBoolean()",
+        ".write": "auth != null && (data.val() != true || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
+    },
+
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".validate": "newData.hasChildren(['name']) && (newData.child('role').val() !== 'admin' || data.child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'admin' || !root.child('meta').child('hasAdmin').exists())",
+        "name": { ".validate": "newData.isString() && newData.val().length <= 80" },
+        "email": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "avatar": { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "staffId": { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "contact": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "status": { ".validate": "newData.val() === 'active' || newData.val() === 'inactive' || newData.val() === 'locked'" },
+        "role": {
+          ".validate": "newData.val() === 'staff' || newData.val() === 'admin'",
+          ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "lastLogin": { ".validate": "newData.isNumber()" }
+      }
+    },
+
+    "invites": {
+      ".read": "auth != null",
+      "$inviteId": {
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (!newData.exists() && data.child('email').val().toLowerCase() === auth.token.email.toLowerCase()))",
+        ".validate": "newData.hasChildren(['name', 'email'])",
+        "name": { ".validate": "newData.isString() && newData.val().length <= 80" },
+        "email": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "staffId": { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "role": { ".validate": "newData.val() === 'staff' || newData.val() === 'admin'" },
+        "contact": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "createdBy": { ".validate": "newData.isString()" }
+      }
+    },
+
+    "audit": {
+      ".read": "auth != null",
+      "$eventId": {
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['action', 'actorName', 'ts'])",
+        "action": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "actorUid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "actorName": { ".validate": "newData.isString() && newData.val().length <= 80" },
+        "actorEmail": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "slotLabel": { ".validate": "newData.isString() && newData.val().length <= 80" },
+        "pegStateBefore": { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "pegStateAfter": { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "ts": { ".validate": "newData.isNumber() && newData.val() <= now + 86400000" },
+        "deviceTime": { ".validate": "newData.isNumber()" }
+      }
+    }
+  }
+}

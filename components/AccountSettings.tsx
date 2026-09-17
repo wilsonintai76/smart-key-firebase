@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { useWebAuthn } from '../hooks/useWebAuthn';
-import { checkExistingCredentials } from '../services/webauthnService';
+import React, { useState } from 'react';
+import { updateUserProfile } from '../services/firebaseUsers';
 
 interface AccountSettingsProps {
   user: any;
@@ -14,44 +13,22 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser,
   const [contact, setContact] = useState(user.contact || '');
   const [userId, setUserId] = useState(user.userId || '');
   const [offlinePin, setOfflinePin] = useState(user.offlinePin || '');
-  const [biometricStatus, setBiometricStatus] = useState('');
-  const [hasBiometric, setHasBiometric] = useState(false);
 
-  // Check D1 for existing credentials on mount
-  useEffect(() => {
-    const username = user.name || user.id || 'user';
-    checkExistingCredentials(username).then(exists => setHasBiometric(exists));
-  }, [user.name, user.id]);
-
-  const { register, isLoading: isBioLoading, error: bioError, isPlatformAvailable } = useWebAuthn();
-
-  const handleSave = () => {
+  const handleSave = async () => {
     setUser({ ...user, name, contact, userId, offlinePin });
+    const synced = await updateUserProfile(user.id, { name, contact, staffId: userId });
     onShowToast({
-      title: 'Profile Updated',
-      message: 'Your account details have been saved.',
-      type: 'success'
+      title: synced ? 'Profile Updated' : 'Saved On This Device',
+      message: synced ? 'Your account details have been synced.' : 'Cloud sync failed — changes are stored locally for now.',
+      type: synced ? 'success' : 'warning'
     });
-  };
-
-  const handleEnrollBiometric = async () => {
-    const username = user.name || user.id || 'user';
-    setBiometricStatus('Starting biometric enrollment...');
-    const success = await register(username);
-    if (success) {
-      setBiometricStatus('Biometric enrolled successfully!');
-      setHasBiometric(true);
-      onShowToast({ title: 'Biometric Enrolled', message: `Fingerprint/Face ID registered.`, type: 'success' });
-    } else {
-      setBiometricStatus(bioError || 'Enrollment failed. Please try again.');
-    }
   };
 
   return (
     <div className="space-y-10 animate-fadeIn">
       <div>
         <h3 className="text-2xl font-black text-slate-900 mb-2">Account Information</h3>
-        <p className="text-xs text-slate-500 font-medium">Manage your identity profile and Digital Binding credentials.</p>
+        <p className="text-xs text-slate-500 font-medium">Manage your Google identity profile and device settings.</p>
       </div>
 
       <div className="space-y-8">
@@ -102,23 +79,23 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser,
           </div>
         </div>
 
-        {/* Staff ID & PIN */}
+        {/* Staff ID & offline emergency code */}
         <div className="pt-6 border-t border-slate-100">
-           <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Staff ID & PIN</h4>
+           <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Staff ID & Emergency Access</h4>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block ml-1">Staff ID (4-Digit)</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block ml-1">Staff ID</label>
                 <input 
                   type="text" 
-                  maxLength={4}
+                  maxLength={12}
                   value={userId}
-                  onChange={(e) => setUserId(e.target.value.replace(/[^0-9]/g, ''))}
+                  onChange={(e) => setUserId(e.target.value)}
                   placeholder="0000"
                   className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm font-mono font-bold text-slate-800 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none" 
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block ml-1">PIN (4-6 Digit)</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block ml-1">Emergency Code (4-6 Digits)</label>
                 <div className="relative">
                   <input 
                     type="password" 
@@ -130,46 +107,12 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, setUser,
                   />
                   <i className="fa-solid fa-key absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
                 </div>
+                <p className="text-[9px] font-medium text-slate-400 ml-1">
+                  Stored on this device only. Used by the deep-offline unlock banner when there is no network.
+                </p>
               </div>
            </div>
         </div>
-
-        {/* Biometric Enrollment — only on devices with platform authenticator */}
-        {isPlatformAvailable === true && (
-        <div className="pt-6 border-t border-slate-100">
-           <h4 className="text-[10px] font-black uppercase text-purple-500 tracking-widest mb-4">
-             <i className="fa-solid fa-fingerprint mr-1"></i>
-             Biometric Enrollment
-           </h4>
-             <div className="bg-purple-50 p-5 rounded-2xl border border-purple-100 space-y-3">
-               <p className="text-[10px] text-purple-700 font-medium">
-                 {hasBiometric
-                   ? 'Biometric is already enrolled. You can sign in with fingerprint.'
-                   : `Enroll your fingerprint for passwordless sign-in as ${user.name || user.id}.`}
-               </p>
-               {!hasBiometric && (
-               <button
-                 onClick={handleEnrollBiometric}
-                 disabled={isBioLoading}
-                 className="w-full py-3 px-4 rounded-xl font-black uppercase text-[10px] tracking-wider bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 transition-colors"
-               >
-                 {isBioLoading ? (
-                   <><i className="fa-solid fa-spinner animate-spin mr-2"></i>Scanning...</>
-                 ) : (
-                   <><i className="fa-solid fa-fingerprint mr-2"></i>Enroll Biometric</>
-                 )}
-               </button>
-               )}
-               {biometricStatus && (
-                 <p className={`text-[9px] font-bold text-center uppercase ${
-                   biometricStatus.includes('success') ? 'text-emerald-600' : 'text-rose-500'
-                 }`}>
-                   {biometricStatus}
-                 </p>
-               )}
-             </div>
-        </div>
-        )}
 
         <button 
           onClick={handleSave}

@@ -27,7 +27,7 @@ interface AdminHubProps {
   onUnlockUser: (id: string) => void;
   onDeleteUser: (id: string) => void;
   onUpdateUserCredentials?: (user: UserAccount) => void;
-  onAddUser?: (name: string, staffId: string, pin: string, role: 'staff' | 'admin') => Promise<boolean>;
+  onAddUser?: (name: string, email: string, staffId: string, role: 'staff' | 'admin', contact?: string) => Promise<boolean>;
   onAddModule: () => void;
   onDeleteModule: (idx: number) => void;
   onUpdateSlotLabel: (id: number, label: string) => void;
@@ -130,11 +130,12 @@ export const AdminHub: React.FC<AdminHubProps> = ({
 
   if (!isAdminMode) return null;
 
-  // Add User state
+  // Add User (invite) state
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserId, setNewUserId] = useState('');
-  const [newUserPin, setNewUserPin] = useState('');
+  const [newUserContact, setNewUserContact] = useState('');
   const [newUserRole, setNewUserRole] = useState<'staff' | 'admin'>('staff');
   const [addUserStatus, setAddUserStatus] = useState('');
 
@@ -248,20 +249,28 @@ export const AdminHub: React.FC<AdminHubProps> = ({
           <div className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-black text-slate-900 text-sm uppercase flex items-center gap-3">
-                <i className="fa-solid fa-user-plus text-emerald-600"></i> Add User
+                <i className="fa-solid fa-user-plus text-emerald-600"></i> Invite User
               </h3>
               <button onClick={() => setShowAddUser(!showAddUser)}
                 className="px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
                 <i className={`fa-solid ${showAddUser ? 'fa-times' : 'fa-plus'} mr-1`}></i>
-                {showAddUser ? 'Cancel' : 'Add'}
+                {showAddUser ? 'Cancel' : 'Invite'}
               </button>
             </div>
             {showAddUser && (
               <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-3 animate-fadeIn">
+                <p className="text-[10px] font-bold text-emerald-800 leading-relaxed">
+                  <i className="fa-solid fa-circle-info mr-1"></i>
+                  The invitee signs in with Google using this email address and receives the selected role automatically.
+                </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2"><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Full Name</label>
                     <input type="text" value={newUserName} onChange={e => setNewUserName(e.target.value)}
                       placeholder="e.g. Ahmad" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400" />
+                  </div>
+                  <div className="col-span-2"><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Google Email</label>
+                    <input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)}
+                      placeholder="name@gmail.com" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400" />
                   </div>
                   <div><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Role</label>
                     <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as 'staff' | 'admin')}
@@ -270,35 +279,38 @@ export const AdminHub: React.FC<AdminHubProps> = ({
                       <option value="admin">Admin</option>
                     </select>
                   </div>
-                  <div><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Staff ID (4-Digit)</label>
-                    <input type="text" maxLength={4} value={newUserId} onChange={e => setNewUserId(e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="0000" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-mono font-bold outline-none focus:border-emerald-400" />
+                  <div><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Staff ID (Optional)</label>
+                    <input type="text" maxLength={12} value={newUserId} onChange={e => setNewUserId(e.target.value)}
+                      placeholder="e.g. 0000" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-mono font-bold outline-none focus:border-emerald-400" />
                   </div>
-                  <div className="col-span-2"><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">PIN (4-6 Digit)</label>
-                    <input type="password" maxLength={6} value={newUserPin} onChange={e => setNewUserPin(e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="••••••" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-mono font-bold outline-none focus:border-emerald-400" />
+                  <div className="col-span-2"><label className="text-[9px] font-black uppercase text-slate-400 mb-1 block">Contact (Optional)</label>
+                    <input type="text" value={newUserContact} onChange={e => setNewUserContact(e.target.value)}
+                      placeholder="e.g. +60 12-345 6789" className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-emerald-400" />
                   </div>
                 </div>
                 {addUserStatus && (
                   <p className={`text-[10px] font-bold text-center ${addUserStatus.includes('success') ? 'text-emerald-600' : 'text-rose-500'}`}>{addUserStatus}</p>
                 )}
                 <button onClick={async () => {
-                  if (!newUserName.trim() || !newUserId || newUserId.length !== 4 || !newUserPin || newUserPin.length < 4) {
-                    setAddUserStatus('All fields required. Staff ID=4 digits, PIN≥4 digits.');
+                  const email = newUserEmail.trim().toLowerCase();
+                  if (!newUserName.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+                    setAddUserStatus('Full name and a valid email address are required.');
                     return;
                   }
-                  setAddUserStatus('Registering...');
-                  const ok = onAddUser ? await onAddUser(newUserName.trim(), newUserId, newUserPin, newUserRole) : false;
+                  setAddUserStatus('Saving invite...');
+                  const ok = await (onAddUser
+                    ? onAddUser(newUserName.trim(), email, newUserId.trim(), newUserRole, newUserContact.trim())
+                    : Promise.resolve(false));
                   if (ok) {
-                    setAddUserStatus('User added!');
-                    setNewUserName(''); setNewUserId(''); setNewUserPin(''); setNewUserRole('staff');
+                    setAddUserStatus('success: invite saved.');
+                    setNewUserName(''); setNewUserEmail(''); setNewUserId(''); setNewUserContact(''); setNewUserRole('staff');
                     setShowAddUser(false);
                   } else {
-                    setAddUserStatus('Failed. Staff ID may already exist.');
+                    setAddUserStatus('Failed. Admin rights are required to send an invite.');
                   }
                 }}
                   className="w-full py-2.5 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-colors">
-                  Create User
+                  Send Invite
                 </button>
               </div>
             )}
