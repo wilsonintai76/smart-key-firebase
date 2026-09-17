@@ -9,8 +9,6 @@ interface TelemetryCardProps {
 
 export const TelemetryCard: React.FC<TelemetryCardProps> = ({ status }) => {
   // Use real values if available, otherwise show placeholders indicating no data
-  const rtcVoltage = status?.voltage ?? 0;
-  const isRtcHealthy = rtcVoltage > 2.6;
   const rssi = status?.rssi ?? 0;
   const uptime = status?.uptime ?? "Unknown";
 
@@ -105,24 +103,6 @@ export const TelemetryCard: React.FC<TelemetryCardProps> = ({ status }) => {
           )}
         </div>
 
-        {/* RTC Battery Monitor */}
-        <div>
-          <div className="flex justify-between text-[10px] font-black uppercase mb-2">
-            <span className="flex items-center gap-2">
-              RTC Battery (CR2032)
-              {!isRtcHealthy && rtcVoltage > 0 && <i className="fa-solid fa-triangle-exclamation text-rose-500 animate-pulse"></i>}
-            </span>
-            <span className={isRtcHealthy ? "text-emerald-400" : "text-rose-400"}>{rtcVoltage > 0 ? `${rtcVoltage}V` : '--'}</span>
-          </div>
-          <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-1000 ${isRtcHealthy ? 'bg-emerald-500' : 'bg-rose-500'}`} 
-              style={{ width: `${(rtcVoltage / 3.3) * 100}%` }}
-            ></div>
-          </div>
-          <p className="text-[8px] text-slate-500 mt-1 font-mono">Required for Offline Timekeeping</p>
-        </div>
-
         {/* Logic State */}
         <div>
           <div className="flex justify-between text-[10px] font-black uppercase mb-2">
@@ -139,7 +119,7 @@ export const TelemetryCard: React.FC<TelemetryCardProps> = ({ status }) => {
           <span className="font-mono text-xs text-blue-300">{uptime}</span>
         </div>
       </div>
-      <i className="fa-solid fa-battery-half absolute -bottom-6 -right-6 text-7xl text-white/5 group-hover:scale-110 transition-transform"></i>
+      <i className="fa-solid fa-microchip absolute -bottom-6 -right-6 text-7xl text-white/5 group-hover:scale-110 transition-transform"></i>
     </div>
   );
 };

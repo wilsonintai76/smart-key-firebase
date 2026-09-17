@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './AppRoot';
+import './index.css';
 
 // Patch console methods to prevent preview environment's logger bridge from crashing on circular structures (like React Fiber nodes)
 const originalConsoleLog = console.log;

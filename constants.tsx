@@ -7,7 +7,6 @@ const oneHourAgo = new Date(currentTime.getTime() - (60 * 60 * 1000));
 // ENGINEERING CONSTANTS
 export const SOLENOID_MAX_CYCLES = 50000; // Heat/Coil degradation limit
 export const SWITCH_MAX_CYCLES = 100000;  // Mechanical spring fatigue limit
-export const RTC_NOMINAL_VOLTAGE = 3.0;   // CR2032
 
 export const INITIAL_SLOTS: KeySlot[] = [];
 

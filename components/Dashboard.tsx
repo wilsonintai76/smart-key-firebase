@@ -164,7 +164,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           logs={logs}
           isAdminMode={isAdminMode}
           onExport={exportLogs}
-          slots={slots}
         />
       </div>
     </div>

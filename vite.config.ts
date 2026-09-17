@@ -11,19 +11,13 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
-        proxy: {
-          '/api': {
-            target: 'http://localhost:8787',
-            changeOrigin: true,
-          },
-        },
       },
       plugins: [
         tailwindcss(),
         react(),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: ['favicon.ico'],
+          includeAssets: ['icon-192.png', 'icon-512.png', 'logo.png'],
           manifest: {
             name: 'SecureKey',
             short_name: 'SecureKey',

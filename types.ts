@@ -15,7 +15,6 @@ export interface KeySlot {
   borrowedAt?: string;
   usageCount: number;
   isLocked?: boolean;
-  voltage?: number; 
   networkLatency?: number; // Replaced signalStrength with ms latency for Ethernet
 }
 
@@ -60,7 +59,6 @@ export interface ControllerStatus {
   ip: string;
   mac?: string;
   mode: 'STA' | 'AP';
-  voltage?: number; // Real RTC Battery Voltage
   rssi?: number;    // WiFi Signal Strength
   uptime?: string;  // System Uptime
   doorOpen: boolean; 

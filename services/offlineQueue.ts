@@ -3,7 +3,7 @@
  * Replaces the old Dexie/IndexedDB buffer — no dependencies.
  *
  * When offline, audit events are queued in localStorage.
- * When connectivity returns, the queue is flushed to Cloudflare D1.
+ * When connectivity returns, the queue is flushed to Firebase Realtime Database.
  */
 
 const STORAGE_KEY = 'smartkey_audit_queue';

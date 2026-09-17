@@ -24,7 +24,7 @@ export const CloudConnectionConfig: React.FC<CloudConnectionConfigProps> = ({
           Hardware Connection
         </h3>
         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 ml-7">
-          Storage: Cloudflare D1 (SQLite)
+          Storage: Firebase Realtime Database
         </p>
       </div>
 

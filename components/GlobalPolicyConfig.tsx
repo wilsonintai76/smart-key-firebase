@@ -90,8 +90,8 @@ export const GlobalPolicyConfig: React.FC<GlobalPolicyConfigProps> = ({
                 <i className="fa-solid fa-cloud text-xs"></i>
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase text-emerald-700">Cloudflare D1 (SQLite)</p>
-                <p className="text-[8px] text-emerald-500">Audit logs &amp; configuration stored in server-side SQLite.</p>
+                <p className="text-[10px] font-black uppercase text-emerald-700">Firebase Realtime Database</p>
+                <p className="text-[8px] text-emerald-500">Audit logs &amp; configuration synced to the cloud in real time.</p>
               </div>
             </div>
           </div>

@@ -49,12 +49,6 @@ export const CbmPanel: React.FC<CbmPanelProps> = ({
                ESP32: {isOnline ? 'ONLINE' : 'OFFLINE'}
             </span>
           </div>
-          <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-2xl border border-white/5" title="Real Time Clock Battery">
-             <i className="fa-solid fa-battery-half text-[10px] text-emerald-400"></i>
-             <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
-               RTC {controllerStatus?.voltage != null ? `${controllerStatus.voltage.toFixed(1)}V` : '--'}
-             </span>
-          </div>
         </div>
       </div>
 

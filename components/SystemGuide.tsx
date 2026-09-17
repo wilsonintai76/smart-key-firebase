@@ -61,7 +61,7 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
 
-          {/* Section: Engineering Truths (Lifecycle & RTC) */}
+          {/* Section: Engineering Truths (Lifecycle & Timekeeping) */}
           <div className="p-8 bg-slate-900 rounded-[40px] text-white relative overflow-hidden group">
              <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-10">
                
@@ -94,26 +94,26 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
                  </p>
                </div>
 
-               {/* RTC Explanation */}
+               {/* Timekeeping */}
                <div className="space-y-4">
-                  <h3 className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-2">
-                   <i className="fa-solid fa-battery-half"></i> RTC Battery Monitoring
+                  <h3 className="text-[10px] font-black uppercase text-sky-400 tracking-widest flex items-center gap-2">
+                   <i className="fa-solid fa-clock"></i> Timekeeping (No RTC On Board)
                  </h3>
                  <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
-                   The ESP32 Dev Vroom board manages the solenoid control. In "Offline Mode" (No Internet), it relies on an internal CR2032 Battery (if connected) or RTC module to keep time.
+                   The ESP32 board is powered directly from the 12&ndash;60 V DC supply and has no RTC and no backup cell, so there is nothing to monitor &mdash; no battery, no voltage telemetry. The phone is the clock: every time the app connects over BLE it pushes the current epoch time to the cabinet.
                  </p>
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
                    <div className="flex justify-between items-center mb-2">
-                     <span className="text-[9px] font-black text-slate-400 uppercase">Nominal Voltage</span>
-                     <span className="text-[9px] font-mono font-bold text-emerald-400">3.0V</span>
+                     <span className="text-[9px] font-black text-slate-400 uppercase">Time Source</span>
+                     <span className="text-[9px] font-mono font-bold text-emerald-400">Phone / BLE Sync</span>
                    </div>
                    <div className="flex justify-between items-center">
-                     <span className="text-[9px] font-black text-slate-400 uppercase">Critical Threshold</span>
-                     <span className="text-[9px] font-mono font-bold text-rose-400">&lt; 2.5V</span>
+                     <span className="text-[9px] font-black text-slate-400 uppercase">RTC / Backup Cell</span>
+                     <span className="text-[9px] font-mono font-bold text-sky-400">None</span>
                    </div>
                  </div>
-                 <p className="text-[9px] text-amber-500/80 font-bold uppercase tracking-tight">
-                   Warning: If RTC battery dies during a power outage, offline audit logs will have incorrect timestamps (Epoch 1970).
+                 <p className="text-[9px] text-sky-400/80 font-bold uppercase tracking-tight">
+                   Note: The cabinet clock is set on each connection. Logs written before the first sync of a session can carry the previous epoch.
                  </p>
                </div>
              </div>
@@ -164,7 +164,7 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
                 </div>
                 <h4 className="text-xs font-black text-slate-900 uppercase mb-2">4. Store-and-Forward</h4>
                 <p className="text-[10px] text-slate-500 leading-relaxed">
-                  When online, audit events stream immediately to <strong>Cloudflare D1 (SQLite)</strong>. If the device is offline, events are queued in <strong>localStorage</strong> and automatically flushed when connectivity is restored — no data loss.
+                  When online, audit events stream immediately to <strong>Firebase Realtime Database</strong>. If the device is offline, events are queued in <strong>localStorage</strong> and automatically flushed when connectivity is restored — no data loss.
                 </p>
               </div>
             </div>
@@ -173,19 +173,19 @@ export const SystemGuide: React.FC<SystemGuideProps> = ({ isOpen, onClose }) => 
           {/* Section: Cloud Backend Reference */}
           <div className="p-6 bg-slate-50 border border-slate-200 rounded-[32px] mb-6">
              <h3 className="text-[10px] font-black uppercase text-slate-500 mb-4 tracking-widest flex items-center gap-2">
-               <i className="fa-solid fa-cloud"></i> Cloudflare Workers + D1
+               <i className="fa-solid fa-cloud"></i> Firebase Backend
              </h3>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div>
                  <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Backend Host</p>
                  <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[10px] text-blue-600 truncate">
-                   Cloudflare Workers (Hono)
+                   Firebase Hosting (static PWA)
                  </div>
                </div>
                <div>
                  <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Data Engine</p>
                  <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[10px] text-emerald-600 truncate">
-                   D1 (SQLite) + KV + R2
+                   Realtime Database + Google Sign-In
                  </div>
                </div>
              </div>
